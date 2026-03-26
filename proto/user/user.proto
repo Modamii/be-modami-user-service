@@ -1,0 +1,34 @@
+syntax = "proto3";
+package user;
+option go_package = "github.com/modami/user-service/proto/user";
+
+service UserInternalService {
+    rpc GetUserBasic(GetUserBasicRequest) returns (UserBasicResponse);
+    rpc GetUsersByIDs(GetUsersByIDsRequest) returns (UsersResponse);
+    rpc CheckUserStatus(CheckUserStatusRequest) returns (UserStatusResponse);
+    rpc GetSellerInfo(GetSellerInfoRequest) returns (SellerInfoResponse);
+}
+
+message GetUserBasicRequest { string user_id = 1; }
+message UserBasicResponse {
+    string id = 1;
+    string full_name = 2;
+    string avatar_url = 3;
+    string role = 4;
+    string status = 5;
+    double trust_score = 6;
+}
+message GetUsersByIDsRequest { repeated string user_ids = 1; }
+message UsersResponse { repeated UserBasicResponse users = 1; }
+message CheckUserStatusRequest { string user_id = 1; }
+message UserStatusResponse { string status = 1; bool is_active = 2; }
+message GetSellerInfoRequest { string user_id = 1; }
+message SellerInfoResponse {
+    string user_id = 1;
+    string shop_name = 2;
+    string shop_slug = 3;
+    string shop_logo_url = 4;
+    string kyc_status = 5;
+    double avg_rating = 6;
+    int32 total_reviews = 7;
+}

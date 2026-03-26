@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod:*)",
+      "Bash(go build:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(echo \"DONE: $?\")",
+      "Bash(echo \"DONE=$?\")",
+      "Bash(go env:*)",
+      "Bash(go vet:*)",
+      "Bash(echo \"Vet exit: $?\")",
+      "Bash(echo \"BUILD=$?\")",
+      "Read(//tmp/**)",
+      "Bash(echo \"STATUS=$?\")",
+      "Bash(echo \"VET=$?\")",
+      "Bash(echo \"ALL_OK=$?\")",
+      "Bash(go get:*)"
+    ]
+  }
+}

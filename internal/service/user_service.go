@@ -1,0 +1,242 @@
+package service
+
+import (
+	"context"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/modami/user-service/internal/domain"
+	"github.com/modami/user-service/internal/dto"
+	"github.com/modami/user-service/internal/port"
+	"github.com/modami/user-service/pkg/apperror"
+	"github.com/modami/user-service/pkg/pagination"
+)
+
+type UserService struct {
+	userRepo  port.UserRepository
+	cache     port.CacheService
+	publisher port.EventPublisher
+}
+
+func NewUserService(
+	userRepo port.UserRepository,
+	cache port.CacheService,
+	publisher port.EventPublisher,
+) *UserService {
+	return &UserService{
+		userRepo:  userRepo,
+		cache:     cache,
+		publisher: publisher,
+	}
+}
+
+func (s *UserService) GetProfile(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
+	// Cache-aside pattern
+	cached, err := s.cache.GetProfile(ctx, userID)
+	if err == nil && cached != nil {
+		return cached, nil
+	}
+
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.cache.SetProfile(ctx, user)
+	return user, nil
+}
+
+func (s *UserService) GetMyProfile(ctx context.Context, keycloakID string) (*domain.User, error) {
+	return s.userRepo.GetByKeycloakID(ctx, keycloakID)
+}
+
+func (s *UserService) UpdateProfile(ctx context.Context, userID uuid.UUID, req dto.UpdateProfileRequest) (*domain.User, error) {
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	changedFields := map[string]interface{}{}
+
+	if req.FullName != nil {
+		user.FullName = *req.FullName
+		changedFields["full_name"] = *req.FullName
+	}
+	if req.Phone != nil {
+		user.Phone = *req.Phone
+		changedFields["phone"] = *req.Phone
+	}
+	if req.Bio != nil {
+		user.Bio = *req.Bio
+		changedFields["bio"] = *req.Bio
+	}
+	if req.Gender != nil {
+		user.Gender = domain.GenderType(*req.Gender)
+		changedFields["gender"] = *req.Gender
+	}
+	if req.DateOfBirth != nil {
+		t, err := time.Parse("2006-01-02", *req.DateOfBirth)
+		if err != nil {
+			return nil, err
+		}
+		user.DateOfBirth = &t
+		changedFields["date_of_birth"] = *req.DateOfBirth
+	}
+
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return nil, err
+	}
+
+	_ = s.cache.DeleteProfile(ctx, userID)
+
+	if len(changedFields) > 0 {
+		_ = s.publisher.PublishUserUpdated(ctx, &domain.UserUpdatedEvent{
+			UserID:        userID,
+			ChangedFields: changedFields,
+		})
+	}
+
+	return user, nil
+}
+
+func (s *UserService) UpdateAvatar(ctx context.Context, userID uuid.UUID, avatarURL string) error {
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	user.AvatarURL = avatarURL
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return err
+	}
+	_ = s.cache.DeleteProfile(ctx, userID)
+	return nil
+}
+
+func (s *UserService) UpdateCover(ctx context.Context, userID uuid.UUID, coverURL string) error {
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	user.CoverURL = coverURL
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return err
+	}
+	_ = s.cache.DeleteProfile(ctx, userID)
+	return nil
+}
+
+func (s *UserService) DeactivateAccount(ctx context.Context, userID uuid.UUID) error {
+	if err := s.userRepo.SoftDelete(ctx, userID); err != nil {
+		return err
+	}
+	_ = s.cache.DeleteProfile(ctx, userID)
+	return nil
+}
+
+func (s *UserService) SearchUsers(ctx context.Context, query string, limit int, cursorStr string) ([]*domain.User, string, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+
+	cursor, err := pagination.DecodeCursor(cursorStr)
+	if err != nil {
+		return nil, "", err
+	}
+
+	users, err := s.userRepo.Search(ctx, query, limit+1, cursor)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var nextCursor string
+	if len(users) > limit {
+		nextCursor = pagination.EncodeCursor(users[limit-1].CreatedAt)
+		users = users[:limit]
+	}
+
+	return users, nextCursor, nil
+}
+
+func (s *UserService) UpdateStatus(ctx context.Context, userID uuid.UUID, status domain.UserStatus, reason string) error {
+	if err := s.userRepo.UpdateStatus(ctx, userID, status); err != nil {
+		return err
+	}
+	_ = s.cache.DeleteProfile(ctx, userID)
+
+	if status == domain.UserStatusSuspended {
+		_ = s.publisher.PublishUserSuspended(ctx, &domain.UserSuspendedEvent{
+			UserID:      userID,
+			Reason:      reason,
+			SuspendedAt: time.Now(),
+		})
+	}
+	return nil
+}
+
+func (s *UserService) MarkEmailVerified(ctx context.Context, keycloakID string) error {
+	user, err := s.userRepo.GetByKeycloakID(ctx, keycloakID)
+	if err != nil {
+		return err
+	}
+	user.EmailVerified = true
+	return s.userRepo.Update(ctx, user)
+}
+
+func (s *UserService) SoftDeleteByKeycloakID(ctx context.Context, keycloakID string) error {
+	user, err := s.userRepo.GetByKeycloakID(ctx, keycloakID)
+	if err != nil {
+		if err == apperror.ErrNotFound {
+			return nil
+		}
+		return err
+	}
+	return s.userRepo.SoftDelete(ctx, user.ID)
+}
+
+func (s *UserService) CreateFromEvent(ctx context.Context, event *domain.UserRegisteredEvent) error {
+	// Check if already exists
+	existing, err := s.userRepo.GetByKeycloakID(ctx, event.KeycloakID)
+	if err != nil && err != apperror.ErrNotFound {
+		return err
+	}
+	if existing != nil {
+		return nil
+	}
+
+	now := time.Now()
+	user := &domain.User{
+		ID:            uuid.New(),
+		KeycloakID:    event.KeycloakID,
+		Email:         event.Email,
+		FullName:      event.FullName,
+		Phone:         event.Phone,
+		Role:          domain.UserRoleBuyer,
+		Status:        domain.UserStatusActive,
+		EmailVerified: false,
+		TrustScore:    0,
+		Gender:        domain.GenderUndisclosed,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}
+
+	if err := s.userRepo.Create(ctx, user); err != nil {
+		return err
+	}
+
+	_ = s.publisher.PublishUserProfileCreated(ctx, &domain.UserProfileCreatedEvent{
+		UserID:     user.ID,
+		KeycloakID: user.KeycloakID,
+		Role:       user.Role,
+		Status:     user.Status,
+	})
+
+	return nil
+}
+
+func (s *UserService) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	return s.userRepo.GetByID(ctx, id)
+}
+
+func (s *UserService) GetByKeycloakID(ctx context.Context, keycloakID string) (*domain.User, error) {
+	return s.userRepo.GetByKeycloakID(ctx, keycloakID)
+}

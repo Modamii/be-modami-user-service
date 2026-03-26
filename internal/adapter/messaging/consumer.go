@@ -1,0 +1,137 @@
+package messaging
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log/slog"
+
+	"github.com/modami/user-service/internal/domain"
+	"github.com/modami/user-service/internal/port"
+	"github.com/modami/user-service/internal/service"
+	pkgkafka "github.com/modami/user-service/pkg/kafka"
+	"github.com/twmb/franz-go/pkg/kgo"
+)
+
+// Consumer wraps a pkg/kafka.KafkaService and dispatches auth.events to the correct handlers.
+type Consumer struct {
+	kafkaService *pkgkafka.KafkaService
+	handler      *authEventsHandler
+}
+
+// NewConsumer creates a Kafka consumer configured for the auth.events topic.
+func NewConsumer(
+	brokers []string,
+	groupID string,
+	env string,
+	clientID string,
+	processedRepo port.ProcessedEventRepository,
+	userService *service.UserService,
+) (*Consumer, error) {
+	cfg := &pkgkafka.KafkaConfig{
+		Brokers:         brokers,
+		ClientID:        clientID + "-consumer",
+		ConsumerGroupID: groupID,
+		ProducerOnlyMode: false,
+	}
+	ks, err := pkgkafka.NewKafkaService(cfg, env)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kafka consumer service: %w", err)
+	}
+	return &Consumer{
+		kafkaService: ks,
+		handler: &authEventsHandler{
+			userService:   userService,
+			processedRepo: processedRepo,
+		},
+	}, nil
+}
+
+// Start runs the consumer loop; blocks until ctx is cancelled.
+func (c *Consumer) Start(ctx context.Context) {
+	if err := c.kafkaService.StartConsumer(ctx, []pkgkafka.ConsumerHandler{c.handler}); err != nil {
+		slog.ErrorContext(ctx, "kafka consumer exited", "error", err)
+	}
+}
+
+func (c *Consumer) Close() error {
+	return c.kafkaService.Close()
+}
+
+// authEventsHandler implements pkgkafka.ConsumerHandler for the auth.events topic.
+type authEventsHandler struct {
+	userService   *service.UserService
+	processedRepo port.ProcessedEventRepository
+}
+
+func (h *authEventsHandler) GetTopics() []string {
+	return []string{pkgkafka.TopicAuthEvents}
+}
+
+func (h *authEventsHandler) HandleMessage(ctx context.Context, record *kgo.Record) error {
+	// Derive event ID from headers, falling back to partition+offset.
+	eventID := fmt.Sprintf("%s-%d-%d", record.Topic, record.Partition, record.Offset)
+	for _, hdr := range record.Headers {
+		if hdr.Key == "event_id" {
+			eventID = string(hdr.Value)
+		}
+	}
+
+	// Idempotency check.
+	processed, err := h.processedRepo.IsProcessed(ctx, eventID)
+	if err != nil {
+		slog.ErrorContext(ctx, "idempotency check failed", "error", err, "event_id", eventID)
+	}
+	if processed {
+		return nil
+	}
+
+	// Peek at the event type without full deserialization.
+	var envelope struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(record.Value, &envelope); err != nil {
+		return fmt.Errorf("failed to decode event type: %w", err)
+	}
+
+	var handlerErr error
+	switch envelope.Type {
+	case "user.registered":
+		var event domain.UserRegisteredEvent
+		if err := json.Unmarshal(record.Value, &event); err != nil {
+			return fmt.Errorf("failed to unmarshal UserRegisteredEvent: %w", err)
+		}
+		handlerErr = h.userService.CreateFromEvent(ctx, &event)
+
+	case "user.deleted":
+		var e struct {
+			KeycloakID string `json:"keycloak_id"`
+		}
+		if err := json.Unmarshal(record.Value, &e); err != nil {
+			return fmt.Errorf("failed to unmarshal user.deleted: %w", err)
+		}
+		handlerErr = h.userService.SoftDeleteByKeycloakID(ctx, e.KeycloakID)
+
+	case "user.email_verified":
+		var e struct {
+			KeycloakID string `json:"keycloak_id"`
+		}
+		if err := json.Unmarshal(record.Value, &e); err != nil {
+			return fmt.Errorf("failed to unmarshal user.email_verified: %w", err)
+		}
+		handlerErr = h.userService.MarkEmailVerified(ctx, e.KeycloakID)
+
+	default:
+		slog.WarnContext(ctx, "unknown event type, skipping", "type", envelope.Type)
+		return nil
+	}
+
+	if handlerErr != nil {
+		return handlerErr
+	}
+
+	if err := h.processedRepo.MarkProcessed(ctx, eventID, record.Topic); err != nil {
+		slog.ErrorContext(ctx, "failed to mark event processed", "error", err, "event_id", eventID)
+	}
+	return nil
+}
