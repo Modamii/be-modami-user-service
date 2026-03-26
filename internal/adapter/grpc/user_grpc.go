@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/modami/user-service/internal/service"
-	pb "github.com/modami/user-service/proto/user"
+	pb "gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client/go/techinsights/user"
 	"github.com/modami/user-service/pkg/apperror"
 	"google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"

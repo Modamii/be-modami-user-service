@@ -174,6 +174,8 @@ github.com/ugorji/go/codec v1.2.11 h1:BMaWp1Bb6fHwEtbplGBGJ498wD+LKlNSl25MjdZY4d
 github.com/ugorji/go/codec v1.2.11/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
 gitlab.com/lifegoeson-libs/pkg-logging v1.0.4 h1:Wk9vqQJTV8iw7ItTKKWToBfl+ovHLFKREw+fehhkaPc=
 gitlab.com/lifegoeson-libs/pkg-logging v1.0.4/go.mod h1:JNY5I4/68dCNHkrQWzgrwfjaJiSyjjs2mQe8BoHRLZI=
+gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client v1.0.4 h1:L0UbQ9+6cQdDmMZsmshyxem7TQ/5Fu1397P44az20+A=
+gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client v1.0.4/go.mod h1:d1RXtg5UhvnpY77Rp8LDHT4H8mdEbNSBSwD2Ombo2oo=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/contrib/bridges/otelzap v0.14.0 h1:2nKw2ZXZOC0N8RBsBbYwGwfKR7kJWzzyCZ6QfUGW/es=

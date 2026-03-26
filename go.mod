@@ -16,6 +16,7 @@ require (
 	github.com/twmb/franz-go v1.20.7
 	github.com/twmb/franz-go/pkg/kadm v1.17.2
 	gitlab.com/lifegoeson-libs/pkg-logging v1.0.4
+	gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client v1.0.4
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 )

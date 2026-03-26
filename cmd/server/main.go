@@ -22,7 +22,7 @@ import (
 	"github.com/modami/user-service/internal/port"
 	"github.com/modami/user-service/internal/service"
 	pkgredis "github.com/modami/user-service/pkg/storage/redis"
-	pb "github.com/modami/user-service/proto/user"
+	pb "gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client/go/techinsights/user"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 	loggingmw "gitlab.com/lifegoeson-libs/pkg-logging/middleware"

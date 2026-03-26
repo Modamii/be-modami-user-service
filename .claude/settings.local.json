@@ -20,7 +20,8 @@
       "Bash(tree:*)",
       "Bash(find:*)",
       "Bash(which swag:*)",
-      "Bash(swag init:*)"
+      "Bash(swag init:*)",
+      "Bash(GOPRIVATE=gitlab.com/lifegoeson-libs/* go list -m -versions gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client 2>&1)"
     ]
   }
 }
