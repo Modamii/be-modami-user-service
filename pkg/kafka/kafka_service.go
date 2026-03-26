@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	logging "gitlab.com/lifegoeson-libs/pkg-logging"
+	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
 
 type KafkaService struct {
@@ -70,11 +71,11 @@ func (k *KafkaService) Emit(ctx context.Context, topic string, message *Producer
 	}
 
 	if err := k.client.ProduceSync(ctx, record).FirstErr(); err != nil {
-		slog.ErrorContext(ctx, "failed to send message", "error", err, "topic", topicName, "key", message.Key)
+		logger.Error(ctx, "failed to send message", err, logging.String("topic", topicName), logging.String("key", message.Key))
 		return fmt.Errorf("failed to send message to topic %s: %w", topicName, err)
 	}
 
-	slog.InfoContext(ctx, "message sent successfully", "topic", topicName, "key", message.Key)
+	logger.Info(ctx, "message sent successfully", logging.String("topic", topicName), logging.String("key", message.Key))
 	return nil
 }
 
@@ -84,7 +85,7 @@ func (k *KafkaService) EmitAsync(ctx context.Context, topic string, message *Pro
 
 	valueBytes, err := json.Marshal(message.Value)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to marshal message value for async emit", "error", err)
+		logger.Error(ctx, "failed to marshal message value for async emit", err)
 		return
 	}
 
@@ -103,10 +104,10 @@ func (k *KafkaService) EmitAsync(ctx context.Context, topic string, message *Pro
 	k.client.Produce(produceCtx, record, func(r *kgo.Record, err error) {
 		defer cancel()
 		if err != nil {
-			slog.ErrorContext(produceCtx, "failed to send async message", "error", err, "topic", topicName, "key", message.Key)
+			logger.Error(produceCtx, "failed to send async message", err, logging.String("topic", topicName), logging.String("key", message.Key))
 			return
 		}
-		slog.DebugContext(produceCtx, "async message sent successfully", "topic", topicName, "key", message.Key)
+		logger.Debug(produceCtx, "async message sent successfully", logging.String("topic", topicName), logging.String("key", message.Key))
 	})
 }
 
@@ -118,7 +119,7 @@ func (k *KafkaService) SendMessages(ctx context.Context, topic string, messages 
 	for _, message := range messages {
 		valueBytes, err := json.Marshal(message.Value)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to marshal message value", "error", err)
+			logger.Error(ctx, "failed to marshal message value", err)
 			continue
 		}
 
@@ -134,11 +135,11 @@ func (k *KafkaService) SendMessages(ctx context.Context, topic string, messages 
 	}
 
 	if err := k.client.ProduceSync(ctx, records...).FirstErr(); err != nil {
-		slog.ErrorContext(ctx, "failed to send messages", "error", err, "topic", topicName, "count", len(messages))
+		logger.Error(ctx, "failed to send messages", err, logging.String("topic", topicName), logging.Int("count", len(messages)))
 		return fmt.Errorf("failed to send messages to topic %s: %w", topicName, err)
 	}
 
-	slog.InfoContext(ctx, "messages sent successfully", "topic", topicName, "count", len(messages))
+	logger.Info(ctx, "messages sent successfully", logging.String("topic", topicName), logging.Int("count", len(messages)))
 	return nil
 }
 
@@ -152,7 +153,7 @@ func (k *KafkaService) EnsureTopics(ctx context.Context) error {
 		targetTopics = append(targetTopics, GetTopicWithEnv(k.env, t))
 	}
 
-	slog.InfoContext(ctx, "ensuring kafka topics exist", "count", len(targetTopics))
+	logger.Info(ctx, "ensuring kafka topics exist", logging.Int("count", len(targetTopics)))
 
 	metadata, err := adm.Metadata(ctx)
 	if err != nil {
@@ -163,7 +164,7 @@ func (k *KafkaService) EnsureTopics(ctx context.Context) error {
 	replicationFactor := int16(3)
 	if brokerCount < 3 {
 		replicationFactor = 1
-		slog.WarnContext(ctx, "broker count < 3, using replication factor 1", "brokers", brokerCount)
+		logger.Warn(ctx, "broker count < 3, using replication factor 1", logging.Int("brokers", brokerCount))
 	}
 
 	existingTopics, err := adm.ListTopics(ctx)
@@ -199,16 +200,16 @@ func (k *KafkaService) EnsureTopics(ctx context.Context) error {
 		}
 
 		if len(redundantTopics) > 0 {
-			slog.InfoContext(ctx, "deleting redundant kafka topics", "count", len(redundantTopics), "topics", strings.Join(redundantTopics, ","))
+			logger.Info(ctx, "deleting redundant kafka topics", logging.Int("count", len(redundantTopics)), logging.String("topics", strings.Join(redundantTopics, ",")))
 			delResp, err := adm.DeleteTopics(ctx, redundantTopics...)
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to delete redundant topics", "error", err)
+				logger.Error(ctx, "failed to delete redundant topics", err)
 			} else {
 				for _, res := range delResp {
 					if res.Err != nil {
-						slog.ErrorContext(ctx, "failed to delete redundant topic", "error", res.Err, "topic", res.Topic)
+						logger.Error(ctx, "failed to delete redundant topic", res.Err, logging.String("topic", res.Topic))
 					} else {
-						slog.InfoContext(ctx, "deleted redundant topic", "topic", res.Topic)
+						logger.Info(ctx, "deleted redundant topic", logging.String("topic", res.Topic))
 					}
 				}
 			}
@@ -216,11 +217,11 @@ func (k *KafkaService) EnsureTopics(ctx context.Context) error {
 	}
 
 	if len(missingTopics) == 0 {
-		slog.InfoContext(ctx, "all required kafka topics already exist")
+		logger.Info(ctx, "all required kafka topics already exist")
 		return nil
 	}
 
-	slog.InfoContext(ctx, "creating missing kafka topics", "count", len(missingTopics), "replication", replicationFactor)
+	logger.Info(ctx, "creating missing kafka topics", logging.Int("count", len(missingTopics)), logging.Any("replication", replicationFactor))
 	resp, err := adm.CreateTopics(ctx, 1, replicationFactor, nil, missingTopics...)
 	if err != nil {
 		return fmt.Errorf("failed to create missing topics: %w", err)
@@ -229,10 +230,10 @@ func (k *KafkaService) EnsureTopics(ctx context.Context) error {
 	hasError := false
 	for _, res := range resp {
 		if res.Err != nil {
-			slog.ErrorContext(ctx, "failed to create topic", "error", res.Err, "topic", res.Topic)
+			logger.Error(ctx, "failed to create topic", res.Err, logging.String("topic", res.Topic))
 			hasError = true
 		} else {
-			slog.InfoContext(ctx, "created topic", "topic", res.Topic)
+			logger.Info(ctx, "created topic", logging.String("topic", res.Topic))
 		}
 	}
 
@@ -275,16 +276,16 @@ func (k *KafkaService) StartConsumer(ctx context.Context, handlers []ConsumerHan
 	}
 
 	k.client.AddConsumeTopics(topics...)
-	slog.InfoContext(ctx, "starting consumer group", "topics", strings.Join(topics, ","))
+	logger.Info(ctx, "starting consumer group", logging.String("topics", strings.Join(topics, ",")))
 
 	for {
 		fetches := k.client.PollFetches(ctx)
 		if err := fetches.Err(); err != nil {
 			if ctx.Err() != nil {
-				slog.InfoContext(ctx, "consumer context cancelled")
+				logger.Info(ctx, "consumer context cancelled")
 				return nil
 			}
-			slog.ErrorContext(ctx, "consumer poll error", "error", err)
+			logger.Error(ctx, "consumer poll error", err)
 			time.Sleep(time.Second)
 			continue
 		}
@@ -295,12 +296,12 @@ func (k *KafkaService) StartConsumer(ctx context.Context, handlers []ConsumerHan
 			msgCtx := k.extractContextFromHeaders(record.Headers)
 			hs, exists := handlerMap[record.Topic]
 			if !exists {
-				slog.WarnContext(msgCtx, "no handlers found for topic", "topic", record.Topic)
+				logger.Warn(msgCtx, "no handlers found for topic", logging.String("topic", record.Topic))
 				continue
 			}
 			for _, h := range hs {
 				if err := h.HandleMessage(msgCtx, record); err != nil {
-					slog.ErrorContext(msgCtx, "failed to handle message", "error", err, "topic", record.Topic)
+					logger.Error(msgCtx, "failed to handle message", err, logging.String("topic", record.Topic))
 				}
 			}
 		}
@@ -347,7 +348,7 @@ func (k *KafkaService) buildHeaders(ctx context.Context, customHeaders map[strin
 	for key, value := range customHeaders {
 		headerBytes, err := json.Marshal(value)
 		if err != nil {
-			slog.WarnContext(ctx, "failed to marshal header value", "key", key, "error", err)
+			logger.Warn(ctx, "failed to marshal header value", logging.String("key", key), logging.String("error", err.Error()))
 			continue
 		}
 		headers = append(headers, kgo.RecordHeader{Key: key, Value: headerBytes})

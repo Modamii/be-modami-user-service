@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"reflect"
 	"runtime"
 	"strings"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+	logging "gitlab.com/lifegoeson-libs/pkg-logging"
+	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
 
 // RunConsumer creates a simple Kafka consumer that processes messages with a callback.
@@ -34,7 +35,7 @@ func RunConsumer(ctx context.Context, brokers []string, groupID, topic string, f
 		for !iter.Done() {
 			record := iter.Next()
 			if err := fn(ctx, record.Key, record.Value); err != nil {
-				slog.ErrorContext(ctx, "consumer handler error", "error", err, "topic", record.Topic)
+				logger.Error(ctx, "consumer handler error", err, logging.String("topic", record.Topic))
 			}
 		}
 	}
@@ -92,19 +93,19 @@ func NewConsumer(name string, kafkaService *KafkaService) *Consumer {
 
 func (c *Consumer) RegisterHandler(handler *TopicHandler) {
 	c.handlers[handler.Topic] = handler
-	slog.Info("registered topic handler", "consumer", c.name, "topic", handler.Topic)
+	logger.Info(context.Background(), "registered topic handler", logging.String("consumer", c.name), logging.String("topic", handler.Topic))
 }
 
 func (c *Consumer) HandleMessage(ctx context.Context, message *kgo.Record) error {
 	topic := message.Topic
 	handler, exists := c.handlers[topic]
 	if !exists {
-		slog.WarnContext(ctx, "no handler found for topic", "consumer", c.name, "topic", topic)
+		logger.Warn(ctx, "no handler found for topic", logging.String("consumer", c.name), logging.String("topic", topic))
 		return fmt.Errorf("no handler found for topic: %s", topic)
 	}
 
 	if handler.Options.EnableLogging {
-		slog.InfoContext(ctx, "event processing started", "consumer", c.name, "topic", topic)
+		logger.Info(ctx, "event processing started", logging.String("consumer", c.name), logging.String("topic", topic))
 	}
 
 	start := time.Now()
@@ -112,25 +113,25 @@ func (c *Consumer) HandleMessage(ctx context.Context, message *kgo.Record) error
 
 	for attempt := 0; attempt <= handler.Options.RetryCount; attempt++ {
 		if attempt > 0 {
-			slog.WarnContext(ctx, "retrying message processing", "consumer", c.name, "topic", topic, "attempt", attempt)
+			logger.Warn(ctx, "retrying message processing", logging.String("consumer", c.name), logging.String("topic", topic), logging.Int("attempt", attempt))
 			time.Sleep(handler.Options.RetryDelay)
 		}
 		err := c.processMessage(ctx, handler, message)
 		if err == nil {
 			if handler.Options.EnableLogging {
-				slog.InfoContext(ctx, "event processing done", "consumer", c.name, "topic", topic, "duration", time.Since(start).String())
+				logger.Info(ctx, "event processing done", logging.String("consumer", c.name), logging.String("topic", topic), logging.String("duration", time.Since(start).String()))
 			}
 			return nil
 		}
 		lastErr = err
-		slog.ErrorContext(ctx, "event processing error", "error", err, "consumer", c.name, "topic", topic, "attempt", attempt+1)
+		logger.Error(ctx, "event processing error", err, logging.String("consumer", c.name), logging.String("topic", topic), logging.Int("attempt", attempt+1))
 	}
 
-	slog.ErrorContext(ctx, "event processing failed after all retries", "error", lastErr, "consumer", c.name, "topic", topic, "total_attempts", handler.Options.RetryCount+1)
+	logger.Error(ctx, "event processing failed after all retries", lastErr, logging.String("consumer", c.name), logging.String("topic", topic), logging.Int("total_attempts", handler.Options.RetryCount+1))
 
 	if handler.Options.DeadLetterTopic != "" {
 		if err := c.sendToDeadLetterTopic(ctx, handler.Options.DeadLetterTopic, message, lastErr); err != nil {
-			slog.ErrorContext(ctx, "failed to send to dead letter topic", "error", err, "dlq", handler.Options.DeadLetterTopic)
+			logger.Error(ctx, "failed to send to dead letter topic", err, logging.String("dlq", handler.Options.DeadLetterTopic))
 		}
 	}
 
@@ -144,7 +145,7 @@ func (c *Consumer) processMessage(ctx context.Context, handler *TopicHandler, me
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			slog.ErrorContext(ctx, "handler panicked", "error", fmt.Errorf("panic: %v", r), "consumer", c.name, "topic", handler.Topic, "stack", getStackTrace())
+			logger.Error(ctx, "handler panicked", fmt.Errorf("panic: %v", r), logging.String("consumer", c.name), logging.String("topic", handler.Topic), logging.String("stack", getStackTrace()))
 		}
 	}()
 	return handler.Handler(ctx, payload)

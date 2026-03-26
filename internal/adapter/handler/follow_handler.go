@@ -19,6 +19,18 @@ func NewFollowHandler(followService *service.FollowService) *FollowHandler {
 	return &FollowHandler{followService: followService}
 }
 
+// Follow godoc
+// @Summary      Follow a user
+// @Description  Follow another user by their ID
+// @Tags         Follows
+// @Produce      json
+// @Param        id   path      string  true  "User ID to follow (UUID)"
+// @Success      200  {object}  MessageResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      401  {object}  ErrorResponse
+// @Failure      409  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/{id}/follow [post]
 func (h *FollowHandler) Follow(c *gin.Context) {
 	followerID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -41,6 +53,17 @@ func (h *FollowHandler) Follow(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "followed successfully"})
 }
 
+// Unfollow godoc
+// @Summary      Unfollow a user
+// @Description  Unfollow a user by their ID
+// @Tags         Follows
+// @Produce      json
+// @Param        id   path      string  true  "User ID to unfollow (UUID)"
+// @Success      200  {object}  MessageResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      401  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/{id}/follow [delete]
 func (h *FollowHandler) Unfollow(c *gin.Context) {
 	followerID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -63,6 +86,17 @@ func (h *FollowHandler) Unfollow(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "unfollowed successfully"})
 }
 
+// GetFollowers godoc
+// @Summary      Get followers
+// @Description  Returns a paginated list of a user's followers
+// @Tags         Follows
+// @Produce      json
+// @Param        id      path      string  true   "User ID (UUID)"
+// @Param        limit   query     int     false  "Results per page (max 100)"  default(20)
+// @Param        cursor  query     string  false  "Pagination cursor"
+// @Success      200     {object}  dto.FollowListResponse
+// @Failure      400     {object}  ErrorResponse
+// @Router       /users/{id}/followers [get]
 func (h *FollowHandler) GetFollowers(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
@@ -101,6 +135,17 @@ func (h *FollowHandler) GetFollowers(c *gin.Context) {
 	})
 }
 
+// GetFollowing godoc
+// @Summary      Get following
+// @Description  Returns a paginated list of users that a user follows
+// @Tags         Follows
+// @Produce      json
+// @Param        id      path      string  true   "User ID (UUID)"
+// @Param        limit   query     int     false  "Results per page (max 100)"  default(20)
+// @Param        cursor  query     string  false  "Pagination cursor"
+// @Success      200     {object}  dto.FollowListResponse
+// @Failure      400     {object}  ErrorResponse
+// @Router       /users/{id}/following [get]
 func (h *FollowHandler) GetFollowing(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
@@ -139,6 +184,17 @@ func (h *FollowHandler) GetFollowing(c *gin.Context) {
 	})
 }
 
+// CheckFollowStatus godoc
+// @Summary      Check follow status
+// @Description  Check if the authenticated user follows another user
+// @Tags         Follows
+// @Produce      json
+// @Param        id   path      string  true  "User ID to check (UUID)"
+// @Success      200  {object}  dto.FollowStatusResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      401  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/{id}/follow/status [get]
 func (h *FollowHandler) CheckFollowStatus(c *gin.Context) {
 	followerID, ok := middleware.GetUserID(c)
 	if !ok {

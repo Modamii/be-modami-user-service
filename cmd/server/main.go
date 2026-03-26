@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -24,28 +23,55 @@ import (
 	"github.com/modami/user-service/internal/service"
 	pkgredis "github.com/modami/user-service/pkg/storage/redis"
 	pb "github.com/modami/user-service/proto/user"
+	logging "gitlab.com/lifegoeson-libs/pkg-logging"
+	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
+	loggingmw "gitlab.com/lifegoeson-libs/pkg-logging/middleware"
 	"google.golang.org/grpc"
 )
 
+// @title           Modami User Service API
+// @version         1.0
+// @description     User service for the Modami marketplace platform.
+// @host            localhost:8080
+// @BasePath        /api/v1
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		fmt.Fprintf(os.Stderr, "failed to load config: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := logger.Init(logging.Config{
+		ServiceName:    cfg.ServiceName,
+		ServiceVersion: cfg.ServiceVersion,
+		Environment:    cfg.Environment,
+		Level:          cfg.LogLevel,
+		OTLPEndpoint:   cfg.OTLPEndpoint,
+		Insecure:       cfg.OTLPInsecure,
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to init logger: %v\n", err)
+		os.Exit(1)
 	}
 
 	ctx := context.Background()
+	defer logger.Shutdown(ctx)
 
 	// ── PostgreSQL ────────────────────────────────────────────────────────────
 	dbPool, err := pgxpool.New(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("failed to connect to postgres: %v", err)
+		logger.Error(ctx, "failed to connect to postgres", err)
+		os.Exit(1)
 	}
 	defer dbPool.Close()
 
 	if err := dbPool.Ping(ctx); err != nil {
-		log.Fatalf("postgres ping failed: %v", err)
+		logger.Error(ctx, "postgres ping failed", err)
+		os.Exit(1)
 	}
-	log.Println("connected to postgres")
+	logger.Info(ctx, "connected to postgres")
 
 	// ── Redis ─────────────────────────────────────────────────────────────────
 	redisClient, err := pkgredis.NewRedisClient(pkgredis.RedisConfig{
@@ -54,7 +80,7 @@ func main() {
 		DB:       cfg.RedisDB,
 	})
 	if err != nil {
-		log.Printf("redis connection failed (continuing without cache): %v", err)
+		logger.Warn(ctx, "redis connection failed (continuing without cache)", logging.String("error", err.Error()))
 	}
 	if redisClient != nil {
 		defer pkgredis.CloseRedis(ctx, redisClient)
@@ -81,7 +107,8 @@ func main() {
 		outboxRepo,
 	)
 	if err != nil {
-		log.Fatalf("failed to create kafka producer: %v", err)
+		logger.Error(ctx, "failed to create kafka producer", err)
+		os.Exit(1)
 	}
 	defer publisher.Close()
 
@@ -103,14 +130,15 @@ func main() {
 		userService,
 	)
 	if err != nil {
-		log.Fatalf("failed to create kafka consumer: %v", err)
+		logger.Error(ctx, "failed to create kafka consumer", err)
+		os.Exit(1)
 	}
 	defer consumer.Close()
 
 	// ── Auth middleware ───────────────────────────────────────────────────────
 	authMiddleware, authErr := middleware.NewAuthMiddleware(cfg.KeycloakJWKSURL, userService)
 	if authErr != nil {
-		log.Printf("auth middleware init warning: %v", authErr)
+		logger.Warn(ctx, "auth middleware init warning", logging.String("error", authErr.Error()))
 	}
 
 	// ── HTTP handlers ─────────────────────────────────────────────────────────
@@ -182,43 +210,50 @@ func main() {
 	defer cancelConsumer()
 
 	go func() {
-		log.Println("starting kafka consumer")
+		logger.Info(ctx, "starting kafka consumer")
 		consumer.Start(consumerCtx)
 	}()
 
 	go func() {
-		log.Println("starting outbox worker")
+		logger.Info(ctx, "starting outbox worker")
 		runOutboxWorker(consumerCtx, outboxRepo, publisher)
 	}()
 
 	// ── gRPC server ───────────────────────────────────────────────────────────
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(loggingmw.GRPCStatsHandler()),
+		grpc.UnaryInterceptor(loggingmw.UnaryServerInterceptor()),
+	)
 	pb.RegisterUserInternalServiceServer(grpcServer, grpcadapter.NewUserGRPCServer(userService, sellerService))
 
 	go func() {
 		lis, lisErr := net.Listen("tcp", fmt.Sprintf(":%s", cfg.GRPCPort))
 		if lisErr != nil {
-			log.Fatalf("failed to listen gRPC: %v", lisErr)
+			logger.Error(ctx, "failed to listen gRPC", lisErr)
+			os.Exit(1)
 		}
-		log.Printf("gRPC server listening on :%s", cfg.GRPCPort)
+		logger.Info(ctx, "gRPC server listening", logging.String("port", cfg.GRPCPort))
 		if serveErr := grpcServer.Serve(lis); serveErr != nil {
-			log.Printf("gRPC server error: %v", serveErr)
+			logger.Error(ctx, "gRPC server error", serveErr)
 		}
 	}()
 
 	// ── HTTP server ───────────────────────────────────────────────────────────
+	httpHandler := loggingmw.HTTPMiddleware("user-service", router, &loggingmw.HttpLoggingOptions{
+		ExceptRoutes: []string{"/health", "/metrics"},
+	})
 	httpSrv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.ServerPort),
-		Handler:      router,
+		Handler:      httpHandler,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
 	go func() {
-		log.Printf("HTTP server listening on :%s", cfg.ServerPort)
+		logger.Info(ctx, "HTTP server listening", logging.String("port", cfg.ServerPort))
 		if serveErr := httpSrv.ListenAndServe(); serveErr != nil && serveErr != http.ErrServerClosed {
-			log.Printf("HTTP server error: %v", serveErr)
+			logger.Error(ctx, "HTTP server error", serveErr)
 		}
 	}()
 
@@ -227,17 +262,17 @@ func main() {
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<-quit
 
-	log.Println("shutting down...")
+	logger.Info(ctx, "shutting down...")
 	cancelConsumer()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if shutErr := httpSrv.Shutdown(shutdownCtx); shutErr != nil {
-		log.Printf("HTTP shutdown error: %v", shutErr)
+		logger.Error(ctx, "HTTP shutdown error", shutErr)
 	}
 	grpcServer.GracefulStop()
-	log.Println("server exited")
+	logger.Info(ctx, "server exited")
 }
 
 func runOutboxWorker(ctx context.Context, outboxRepo port.OutboxRepository, publisher port.EventPublisher) {
@@ -256,10 +291,10 @@ func runOutboxWorker(ctx context.Context, outboxRepo port.OutboxRepository, publ
 func processOutboxEvents(ctx context.Context, outboxRepo port.OutboxRepository, _ port.EventPublisher) {
 	events, err := outboxRepo.GetPending(ctx, 50)
 	if err != nil {
-		log.Printf("outbox: get pending error: %v", err)
+		logger.Error(ctx, "outbox: get pending error", err)
 		return
 	}
 	for _, event := range events {
-		log.Printf("outbox: pending event id=%s topic=%s", event.ID, event.Topic)
+		logger.Info(ctx, "outbox: pending event", logging.String("id", event.ID.String()), logging.String("topic", event.Topic))
 	}
 }

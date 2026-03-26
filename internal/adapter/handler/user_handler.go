@@ -23,6 +23,16 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
+// GetMyProfile godoc
+// @Summary      Get my profile
+// @Description  Returns the authenticated user's profile
+// @Tags         Users
+// @Produce      json
+// @Success      200  {object}  dto.UserProfileResponse
+// @Failure      401  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me [get]
 func (h *UserHandler) GetMyProfile(c *gin.Context) {
 	keycloakID, ok := middleware.GetKeycloakID(c)
 	if !ok {
@@ -39,6 +49,16 @@ func (h *UserHandler) GetMyProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, toUserProfileResponse(user))
 }
 
+// GetProfile godoc
+// @Summary      Get user profile
+// @Description  Returns a user's public profile by ID
+// @Tags         Users
+// @Produce      json
+// @Param        id   path      string  true  "User ID (UUID)"
+// @Success      200  {object}  dto.UserProfileResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Router       /users/{id} [get]
 func (h *UserHandler) GetProfile(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -56,6 +76,18 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, toUserProfileResponse(user))
 }
 
+// UpdateProfile godoc
+// @Summary      Update my profile
+// @Description  Updates the authenticated user's profile fields
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.UpdateProfileRequest  true  "Profile fields to update"
+// @Success      200   {object}  dto.UserProfileResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      401   {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me [put]
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -82,6 +114,18 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, toUserProfileResponse(user))
 }
 
+// UpdateAvatar godoc
+// @Summary      Update avatar
+// @Description  Updates the authenticated user's avatar URL
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.UpdateAvatarRequest  true  "Avatar URL"
+// @Success      200   {object}  MessageResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      401   {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me/avatar [put]
 func (h *UserHandler) UpdateAvatar(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -103,6 +147,18 @@ func (h *UserHandler) UpdateAvatar(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "avatar updated"})
 }
 
+// UpdateCover godoc
+// @Summary      Update cover image
+// @Description  Updates the authenticated user's cover image URL
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.UpdateCoverRequest  true  "Cover URL"
+// @Success      200   {object}  MessageResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      401   {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me/cover [put]
 func (h *UserHandler) UpdateCover(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -124,6 +180,15 @@ func (h *UserHandler) UpdateCover(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "cover updated"})
 }
 
+// DeactivateAccount godoc
+// @Summary      Deactivate account
+// @Description  Deactivates the authenticated user's account
+// @Tags         Users
+// @Produce      json
+// @Success      200  {object}  MessageResponse
+// @Failure      401  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me [delete]
 func (h *UserHandler) DeactivateAccount(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -139,6 +204,17 @@ func (h *UserHandler) DeactivateAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "account deactivated"})
 }
 
+// SearchUsers godoc
+// @Summary      Search users
+// @Description  Search users by name or email
+// @Tags         Users
+// @Produce      json
+// @Param        q       query     string  true   "Search query"
+// @Param        limit   query     int     false  "Results per page (max 100)"  default(20)
+// @Param        cursor  query     string  false  "Pagination cursor"
+// @Success      200     {object}  SearchUsersResponse
+// @Failure      400     {object}  ErrorResponse
+// @Router       /users/search [get]
 func (h *UserHandler) SearchUsers(c *gin.Context) {
 	query := c.Query("q")
 	if query == "" {

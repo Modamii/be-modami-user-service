@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	logging "gitlab.com/lifegoeson-libs/pkg-logging"
+	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
 
 func Logger() gin.HandlerFunc {
@@ -19,6 +20,12 @@ func Logger() gin.HandlerFunc {
 		statusCode := c.Writer.Status()
 		clientIP := c.ClientIP()
 
-		log.Printf("[HTTP] %s %s %d %v %s", method, path, statusCode, duration, clientIP)
+		logger.Info(c.Request.Context(), "HTTP request",
+			logging.String("method", method),
+			logging.String("path", path),
+			logging.Int("status", statusCode),
+			logging.String("duration", duration.String()),
+			logging.String("client_ip", clientIP),
+		)
 	}
 }

@@ -20,6 +20,19 @@ func NewAddressHandler(addressService *service.AddressService) *AddressHandler {
 	return &AddressHandler{addressService: addressService}
 }
 
+// AddAddress godoc
+// @Summary      Add address
+// @Description  Add a new address for the authenticated user
+// @Tags         Addresses
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.CreateAddressRequest  true  "Address details"
+// @Success      201   {object}  dto.AddressResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      401   {object}  ErrorResponse
+// @Failure      422   {object}  ErrorResponse  "Address limit reached"
+// @Security     BearerAuth
+// @Router       /users/me/addresses [post]
 func (h *AddressHandler) AddAddress(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -46,6 +59,15 @@ func (h *AddressHandler) AddAddress(c *gin.Context) {
 	c.JSON(http.StatusCreated, toAddressResponse(addr))
 }
 
+// ListAddresses godoc
+// @Summary      List addresses
+// @Description  Returns all addresses for the authenticated user
+// @Tags         Addresses
+// @Produce      json
+// @Success      200  {object}  AddressListResponse
+// @Failure      401  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me/addresses [get]
 func (h *AddressHandler) ListAddresses(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -67,6 +89,20 @@ func (h *AddressHandler) ListAddresses(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"addresses": items})
 }
 
+// UpdateAddress godoc
+// @Summary      Update address
+// @Description  Update an existing address
+// @Tags         Addresses
+// @Accept       json
+// @Produce      json
+// @Param        addr_id  path      string                   true  "Address ID (UUID)"
+// @Param        body     body      dto.UpdateAddressRequest  true  "Fields to update"
+// @Success      200      {object}  dto.AddressResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      401      {object}  ErrorResponse
+// @Failure      404      {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me/addresses/{addr_id} [put]
 func (h *AddressHandler) UpdateAddress(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -100,6 +136,18 @@ func (h *AddressHandler) UpdateAddress(c *gin.Context) {
 	c.JSON(http.StatusOK, toAddressResponse(addr))
 }
 
+// DeleteAddress godoc
+// @Summary      Delete address
+// @Description  Delete an address by ID
+// @Tags         Addresses
+// @Produce      json
+// @Param        addr_id  path      string  true  "Address ID (UUID)"
+// @Success      200      {object}  MessageResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      401      {object}  ErrorResponse
+// @Failure      404      {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me/addresses/{addr_id} [delete]
 func (h *AddressHandler) DeleteAddress(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -122,6 +170,18 @@ func (h *AddressHandler) DeleteAddress(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "address deleted"})
 }
 
+// SetDefault godoc
+// @Summary      Set default address
+// @Description  Set an address as the default
+// @Tags         Addresses
+// @Produce      json
+// @Param        addr_id  path      string  true  "Address ID (UUID)"
+// @Success      200      {object}  MessageResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      401      {object}  ErrorResponse
+// @Failure      404      {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me/addresses/{addr_id}/default [put]
 func (h *AddressHandler) SetDefault(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {

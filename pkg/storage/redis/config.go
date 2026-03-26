@@ -2,10 +2,11 @@ package redis
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	logging "gitlab.com/lifegoeson-libs/pkg-logging"
+	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
 
 type RedisConfig struct {
@@ -58,19 +59,19 @@ func NewRedisClient(config RedisConfig) (*redis.Client, error) {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		log.Printf("redis: failed to connect: %v", err)
+		logger.Error(ctx, "redis: failed to connect", err)
 		return nil, err
 	}
 
-	log.Printf("redis: connected to %s", config.Addr)
+	logger.Info(ctx, "redis: connected", logging.String("addr", config.Addr))
 	return client, nil
 }
 
 func CloseRedis(ctx context.Context, client *redis.Client) error {
 	if err := client.Close(); err != nil {
-		log.Printf("redis: failed to close connection: %v", err)
+		logger.Error(ctx, "redis: failed to close connection", err)
 		return err
 	}
-	log.Println("redis: connection closed")
+	logger.Info(ctx, "redis: connection closed")
 	return nil
 }

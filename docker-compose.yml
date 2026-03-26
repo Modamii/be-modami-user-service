@@ -1,60 +1,20 @@
 version: '3.8'
 services:
-  user-service:
-    build: .
-    ports:
-      - "8080:8080"
-      - "9090:9090"
-    environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/userdb?sslmode=disable
-      REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka:9092
-      KAFKA_CONSUMER_GROUP: user-service-group
-      LOG_LEVEL: info
-    depends_on:
-      - postgres
-      - redis
-      - kafka
-    restart: unless-stopped
-
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: userdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      POSTGRES_DB: be-modami-user-service
+      POSTGRES_USER: modami
+      POSTGRES_PASSWORD: modami
     ports:
       - "5432:5432"
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    restart: unless-stopped
-
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    depends_on:
-      - zookeeper
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    ports:
-      - "9092:9092"
-    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U modami -d be-modami-user-service"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  postgres_data:
+  pgdata:

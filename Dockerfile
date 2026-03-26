@@ -1,37 +1,64 @@
 # Build stage
-FROM golang:1.22-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+
+RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates
+ARG TARGETOS TARGETARCH
 
-# Copy go mod files
 COPY go.mod go.sum ./
-RUN go mod download
 
-# Copy source code
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=secret,id=gitlab_username,required=false \
+    --mount=type=secret,id=gitlab_token,required=false \
+    set -e; \
+    if [ -f /run/secrets/gitlab_username ] && [ -f /run/secrets/gitlab_token ]; then \
+        GITLAB_USERNAME="$(cat /run/secrets/gitlab_username)"; \
+        GITLAB_TOKEN="$(cat /run/secrets/gitlab_token)"; \
+        echo "Configuring GitLab private repo access"; \
+        printf "machine gitlab.com\nlogin %s\npassword %s\n" \
+          "$GITLAB_USERNAME" "$GITLAB_TOKEN" > ~/.netrc; \
+        chmod 600 ~/.netrc; \
+        git config --global url."https://${GITLAB_USERNAME}:${GITLAB_TOKEN}@gitlab.com/".insteadOf "https://gitlab.com/"; \
+        go env -w GOPRIVATE=gitlab.com/lifegoeson-libs/* && \
+        go env -w GONOPROXY=gitlab.com/lifegoeson-libs/* && \
+        go env -w GONOSUMDB=gitlab.com/lifegoeson-libs/*; \
+    else \
+        echo "No GitLab credentials, skipping private repo setup"; \
+    fi; \
+    go mod download
+
 COPY . .
 
-# Build binary
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o bin/server ./cmd/server
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
+    -ldflags="-w -s" \
+    -o main ./cmd/api
 
+    
 # Final stage
-FROM alpine:3.19
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata wget
+
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
 
 WORKDIR /app
 
-# Install ca-certificates for TLS
-RUN apk add --no-cache ca-certificates tzdata
+COPY --from=builder /app/main .
+COPY --from=builder /app/configs ./configs
+COPY --from=builder /app/.env* ./
 
-# Copy binary from builder
-COPY --from=builder /app/bin/server .
+RUN chown -R appuser:appgroup /app
 
-# Copy migrations
-COPY --from=builder /app/migrations ./migrations
+USER appuser
 
-# Expose ports
-EXPOSE 8080 9090
+EXPOSE 8080
 
-# Run
-CMD ["./server"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+CMD ["./main"]

@@ -1,0 +1,1350 @@
+basePath: /api/v1
+definitions:
+  github_com_modami_user-service_internal_dto.AddressResponse:
+    properties:
+      address_line_1:
+        type: string
+      address_line_2:
+        type: string
+      country:
+        type: string
+      created_at:
+        type: string
+      district:
+        type: string
+      id:
+        type: string
+      is_default:
+        type: boolean
+      label:
+        type: string
+      phone:
+        type: string
+      postal_code:
+        type: string
+      province:
+        type: string
+      recipient_name:
+        type: string
+      ward:
+        type: string
+    type: object
+  github_com_modami_user-service_internal_dto.CreateAddressRequest:
+    properties:
+      address_line_1:
+        maxLength: 512
+        type: string
+      address_line_2:
+        maxLength: 512
+        type: string
+      country:
+        maxLength: 64
+        type: string
+      district:
+        maxLength: 128
+        type: string
+      is_default:
+        type: boolean
+      label:
+        maxLength: 50
+        type: string
+      phone:
+        type: string
+      postal_code:
+        maxLength: 20
+        type: string
+      province:
+        maxLength: 128
+        type: string
+      recipient_name:
+        maxLength: 255
+        type: string
+      ward:
+        maxLength: 128
+        type: string
+    required:
+    - address_line_1
+    - label
+    - phone
+    - recipient_name
+    type: object
+  github_com_modami_user-service_internal_dto.CreateReviewRequest:
+    properties:
+      comment:
+        maxLength: 1000
+        type: string
+      is_anonymous:
+        type: boolean
+      order_id:
+        type: string
+      rating:
+        maximum: 5
+        minimum: 1
+        type: integer
+    required:
+    - order_id
+    - rating
+    type: object
+  github_com_modami_user-service_internal_dto.FollowListResponse:
+    properties:
+      cursor:
+        type: string
+      users:
+        items:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.FollowUserItem'
+        type: array
+    type: object
+  github_com_modami_user-service_internal_dto.FollowStatusResponse:
+    properties:
+      is_following:
+        type: boolean
+    type: object
+  github_com_modami_user-service_internal_dto.FollowUserItem:
+    properties:
+      avatar_url:
+        type: string
+      followed_at:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+    type: object
+  github_com_modami_user-service_internal_dto.KYCDocumentInput:
+    properties:
+      doc_type:
+        enum:
+        - id_card_front
+        - id_card_back
+        - business_license
+        - selfie_with_id
+        type: string
+      doc_url:
+        type: string
+    required:
+    - doc_type
+    - doc_url
+    type: object
+  github_com_modami_user-service_internal_dto.KYCStatusResponse:
+    properties:
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_modami_user-service_internal_dto.RatingSummaryResponse:
+    properties:
+      avg_rating:
+        type: number
+      count_1:
+        type: integer
+      count_2:
+        type: integer
+      count_3:
+        type: integer
+      count_4:
+        type: integer
+      count_5:
+        type: integer
+      total_reviews:
+        type: integer
+      user_id:
+        type: string
+    type: object
+  github_com_modami_user-service_internal_dto.RegisterSellerRequest:
+    properties:
+      bank_account:
+        type: string
+      bank_name:
+        maxLength: 128
+        type: string
+      business_type:
+        enum:
+        - individual
+        - business
+        type: string
+      shop_description:
+        maxLength: 1000
+        type: string
+      shop_name:
+        maxLength: 255
+        minLength: 3
+        type: string
+      shop_slug:
+        maxLength: 255
+        minLength: 3
+        type: string
+      tax_id:
+        type: string
+    required:
+    - business_type
+    - shop_name
+    - shop_slug
+    type: object
+  github_com_modami_user-service_internal_dto.RejectKYCRequest:
+    properties:
+      reason:
+        maxLength: 500
+        minLength: 1
+        type: string
+    required:
+    - reason
+    type: object
+  github_com_modami_user-service_internal_dto.ReviewListResponse:
+    properties:
+      cursor:
+        type: string
+      reviews:
+        items:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.ReviewResponse'
+        type: array
+    type: object
+  github_com_modami_user-service_internal_dto.ReviewResponse:
+    properties:
+      comment:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      is_anonymous:
+        type: boolean
+      order_id:
+        type: string
+      rating:
+        type: integer
+      reviewee_id:
+        type: string
+      reviewer_id:
+        type: string
+      role:
+        type: string
+    type: object
+  github_com_modami_user-service_internal_dto.SellerProfileResponse:
+    properties:
+      avg_rating:
+        type: number
+      business_type:
+        type: string
+      created_at:
+        type: string
+      kyc_status:
+        type: string
+      shop_banner_url:
+        type: string
+      shop_description:
+        type: string
+      shop_logo_url:
+        type: string
+      shop_name:
+        type: string
+      shop_slug:
+        type: string
+      total_reviews:
+        type: integer
+      user_id:
+        type: string
+    type: object
+  github_com_modami_user-service_internal_dto.SubmitKYCRequest:
+    properties:
+      documents:
+        items:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.KYCDocumentInput'
+        minItems: 1
+        type: array
+    required:
+    - documents
+    type: object
+  github_com_modami_user-service_internal_dto.UpdateAddressRequest:
+    properties:
+      address_line_1:
+        maxLength: 512
+        type: string
+      address_line_2:
+        maxLength: 512
+        type: string
+      country:
+        maxLength: 64
+        type: string
+      district:
+        maxLength: 128
+        type: string
+      is_default:
+        type: boolean
+      label:
+        maxLength: 50
+        type: string
+      phone:
+        type: string
+      postal_code:
+        maxLength: 20
+        type: string
+      province:
+        maxLength: 128
+        type: string
+      recipient_name:
+        maxLength: 255
+        type: string
+      ward:
+        maxLength: 128
+        type: string
+    type: object
+  github_com_modami_user-service_internal_dto.UpdateAvatarRequest:
+    properties:
+      avatar_url:
+        type: string
+    required:
+    - avatar_url
+    type: object
+  github_com_modami_user-service_internal_dto.UpdateCoverRequest:
+    properties:
+      cover_url:
+        type: string
+    required:
+    - cover_url
+    type: object
+  github_com_modami_user-service_internal_dto.UpdateProfileRequest:
+    properties:
+      bio:
+        maxLength: 500
+        type: string
+      date_of_birth:
+        type: string
+      full_name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      gender:
+        enum:
+        - male
+        - female
+        - other
+        - undisclosed
+        type: string
+      phone:
+        type: string
+    type: object
+  github_com_modami_user-service_internal_dto.UpdateSellerProfileRequest:
+    properties:
+      bank_account:
+        type: string
+      bank_name:
+        maxLength: 128
+        type: string
+      shop_banner_url:
+        type: string
+      shop_description:
+        maxLength: 1000
+        type: string
+      shop_logo_url:
+        type: string
+      shop_name:
+        maxLength: 255
+        minLength: 3
+        type: string
+      tax_id:
+        type: string
+    type: object
+  github_com_modami_user-service_internal_dto.UpdateStatusRequest:
+    properties:
+      reason:
+        maxLength: 500
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        - suspended
+        - banned
+        type: string
+    required:
+    - status
+    type: object
+  github_com_modami_user-service_internal_dto.UserProfileResponse:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      cover_url:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      follower_count:
+        type: integer
+      following_count:
+        type: integer
+      full_name:
+        type: string
+      gender:
+        type: string
+      id:
+        type: string
+      phone:
+        type: string
+      role:
+        type: string
+      status:
+        type: string
+      trust_score:
+        type: number
+    type: object
+  internal_adapter_handler.AddressListResponse:
+    properties:
+      addresses:
+        items:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.AddressResponse'
+        type: array
+    type: object
+  internal_adapter_handler.ErrorResponse:
+    properties:
+      error:
+        example: error message
+        type: string
+    type: object
+  internal_adapter_handler.MessageResponse:
+    properties:
+      message:
+        example: operation successful
+        type: string
+    type: object
+  internal_adapter_handler.SearchUsersResponse:
+    properties:
+      cursor:
+        type: string
+      users:
+        items:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse'
+        type: array
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: User service for the Modami marketplace platform.
+  title: Modami User Service API
+  version: "1.0"
+paths:
+  /admin/users:
+    get:
+      description: List all users with optional search (admin only)
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        type: string
+      - default: 20
+        description: Results per page (max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Pagination cursor
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.SearchUsersResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List users
+      tags:
+      - Admin
+  /admin/users/{id}/kyc/approve:
+    put:
+      description: Approve a user's KYC verification (admin only)
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve KYC
+      tags:
+      - Admin
+  /admin/users/{id}/kyc/reject:
+    put:
+      consumes:
+      - application/json
+      description: Reject a user's KYC verification with a reason (admin only)
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rejection reason
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.RejectKYCRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject KYC
+      tags:
+      - Admin
+  /admin/users/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Update a user's account status (admin only)
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New status
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user status
+      tags:
+      - Admin
+  /users/{id}:
+    get:
+      description: Returns a user's public profile by ID
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      summary: Get user profile
+      tags:
+      - Users
+  /users/{id}/follow:
+    delete:
+      description: Unfollow a user by their ID
+      parameters:
+      - description: User ID to unfollow (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Unfollow a user
+      tags:
+      - Follows
+    post:
+      description: Follow another user by their ID
+      parameters:
+      - description: User ID to follow (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Follow a user
+      tags:
+      - Follows
+  /users/{id}/follow/status:
+    get:
+      description: Check if the authenticated user follows another user
+      parameters:
+      - description: User ID to check (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.FollowStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Check follow status
+      tags:
+      - Follows
+  /users/{id}/followers:
+    get:
+      description: Returns a paginated list of a user's followers
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 20
+        description: Results per page (max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Pagination cursor
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.FollowListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      summary: Get followers
+      tags:
+      - Follows
+  /users/{id}/following:
+    get:
+      description: Returns a paginated list of users that a user follows
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 20
+        description: Results per page (max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Pagination cursor
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.FollowListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      summary: Get following
+      tags:
+      - Follows
+  /users/{id}/reviews:
+    get:
+      description: Returns a paginated list of reviews for a user
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 20
+        description: Results per page (max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Pagination cursor
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.ReviewListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      summary: List reviews
+      tags:
+      - Reviews
+    post:
+      consumes:
+      - application/json
+      description: Create a review for a user (as a buyer)
+      parameters:
+      - description: Reviewee user ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Review details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.CreateReviewRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.ReviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a review
+      tags:
+      - Reviews
+  /users/{id}/reviews/summary:
+    get:
+      description: Returns rating statistics for a user
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.RatingSummaryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      summary: Get rating summary
+      tags:
+      - Reviews
+  /users/{id}/shop:
+    get:
+      description: Returns a seller's public shop profile
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.SellerProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      summary: Get shop profile
+      tags:
+      - Sellers
+  /users/me:
+    delete:
+      description: Deactivates the authenticated user's account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate account
+      tags:
+      - Users
+    get:
+      description: Returns the authenticated user's profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Updates the authenticated user's profile fields
+      parameters:
+      - description: Profile fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update my profile
+      tags:
+      - Users
+  /users/me/addresses:
+    get:
+      description: Returns all addresses for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.AddressListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List addresses
+      tags:
+      - Addresses
+    post:
+      consumes:
+      - application/json
+      description: Add a new address for the authenticated user
+      parameters:
+      - description: Address details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.CreateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.AddressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "422":
+          description: Address limit reached
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add address
+      tags:
+      - Addresses
+  /users/me/addresses/{addr_id}:
+    delete:
+      description: Delete an address by ID
+      parameters:
+      - description: Address ID (UUID)
+        in: path
+        name: addr_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete address
+      tags:
+      - Addresses
+    put:
+      consumes:
+      - application/json
+      description: Update an existing address
+      parameters:
+      - description: Address ID (UUID)
+        in: path
+        name: addr_id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.AddressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update address
+      tags:
+      - Addresses
+  /users/me/addresses/{addr_id}/default:
+    put:
+      description: Set an address as the default
+      parameters:
+      - description: Address ID (UUID)
+        in: path
+        name: addr_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set default address
+      tags:
+      - Addresses
+  /users/me/avatar:
+    put:
+      consumes:
+      - application/json
+      description: Updates the authenticated user's avatar URL
+      parameters:
+      - description: Avatar URL
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateAvatarRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update avatar
+      tags:
+      - Users
+  /users/me/cover:
+    put:
+      consumes:
+      - application/json
+      description: Updates the authenticated user's cover image URL
+      parameters:
+      - description: Cover URL
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateCoverRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update cover image
+      tags:
+      - Users
+  /users/me/seller/kyc:
+    post:
+      consumes:
+      - application/json
+      description: Submit KYC documents for verification
+      parameters:
+      - description: KYC documents
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.SubmitKYCRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit KYC documents
+      tags:
+      - KYC
+  /users/me/seller/kyc/status:
+    get:
+      description: Returns the KYC verification status for the authenticated seller
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.KYCStatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get KYC status
+      tags:
+      - KYC
+  /users/me/seller/profile:
+    put:
+      consumes:
+      - application/json
+      description: Update the authenticated seller's profile
+      parameters:
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateSellerProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.SellerProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update seller profile
+      tags:
+      - Sellers
+  /users/me/seller/register:
+    post:
+      consumes:
+      - application/json
+      description: Register the authenticated user as a seller
+      parameters:
+      - description: Seller registration details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_modami_user-service_internal_dto.RegisterSellerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_modami_user-service_internal_dto.SellerProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+        "409":
+          description: Already a seller
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Register as seller
+      tags:
+      - Sellers
+  /users/search:
+    get:
+      description: Search users by name or email
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 20
+        description: Results per page (max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Pagination cursor
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.SearchUsersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+      summary: Search users
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

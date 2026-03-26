@@ -24,6 +24,19 @@ func NewSellerHandler(sellerService *service.SellerService, kycService *service.
 	}
 }
 
+// Register godoc
+// @Summary      Register as seller
+// @Description  Register the authenticated user as a seller
+// @Tags         Sellers
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.RegisterSellerRequest  true  "Seller registration details"
+// @Success      201   {object}  dto.SellerProfileResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      401   {object}  ErrorResponse
+// @Failure      409   {object}  ErrorResponse  "Already a seller"
+// @Security     BearerAuth
+// @Router       /users/me/seller/register [post]
 func (h *SellerHandler) Register(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -50,6 +63,19 @@ func (h *SellerHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, toSellerProfileResponse(profile))
 }
 
+// UpdateProfile godoc
+// @Summary      Update seller profile
+// @Description  Update the authenticated seller's profile
+// @Tags         Sellers
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.UpdateSellerProfileRequest  true  "Fields to update"
+// @Success      200   {object}  dto.SellerProfileResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      401   {object}  ErrorResponse
+// @Failure      404   {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me/seller/profile [put]
 func (h *SellerHandler) UpdateProfile(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -76,6 +102,16 @@ func (h *SellerHandler) UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, toSellerProfileResponse(profile))
 }
 
+// GetShopProfile godoc
+// @Summary      Get shop profile
+// @Description  Returns a seller's public shop profile
+// @Tags         Sellers
+// @Produce      json
+// @Param        id   path      string  true  "User ID (UUID)"
+// @Success      200  {object}  dto.SellerProfileResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Router       /users/{id}/shop [get]
 func (h *SellerHandler) GetShopProfile(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
@@ -93,6 +129,18 @@ func (h *SellerHandler) GetShopProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, toSellerProfileResponse(profile))
 }
 
+// SubmitKYC godoc
+// @Summary      Submit KYC documents
+// @Description  Submit KYC documents for verification
+// @Tags         KYC
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.SubmitKYCRequest  true  "KYC documents"
+// @Success      200   {object}  MessageResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      401   {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me/seller/kyc [post]
 func (h *SellerHandler) SubmitKYC(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -118,6 +166,16 @@ func (h *SellerHandler) SubmitKYC(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "KYC documents submitted"})
 }
 
+// GetKYCStatus godoc
+// @Summary      Get KYC status
+// @Description  Returns the KYC verification status for the authenticated seller
+// @Tags         KYC
+// @Produce      json
+// @Success      200  {object}  dto.KYCStatusResponse
+// @Failure      401  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/me/seller/kyc/status [get]
 func (h *SellerHandler) GetKYCStatus(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {

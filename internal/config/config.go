@@ -19,6 +19,12 @@ type Config struct {
 	KafkaEnv           string // env prefix for topic names (e.g. "local", "prod"); empty = no prefix
 	KeycloakJWKSURL    string
 	LogLevel           string
+	// Observability
+	ServiceName    string
+	ServiceVersion string
+	Environment    string
+	OTLPEndpoint   string
+	OTLPInsecure   bool
 }
 
 func Load() (*Config, error) {
@@ -29,6 +35,11 @@ func Load() (*Config, error) {
 	viper.SetDefault("KAFKA_ENV", "")
 	viper.SetDefault("REDIS_ADDR", "localhost:6379")
 	viper.SetDefault("LOG_LEVEL", "info")
+	viper.SetDefault("SERVICE_NAME", "user-service")
+	viper.SetDefault("SERVICE_VERSION", "1.0.0")
+	viper.SetDefault("ENVIRONMENT", "local")
+	viper.SetDefault("OTLP_ENDPOINT", "")
+	viper.SetDefault("OTLP_INSECURE", true)
 
 	viper.AutomaticEnv()
 
@@ -53,5 +64,10 @@ func Load() (*Config, error) {
 		KafkaEnv:           viper.GetString("KAFKA_ENV"),
 		KeycloakJWKSURL:    viper.GetString("KEYCLOAK_JWKS_URL"),
 		LogLevel:           viper.GetString("LOG_LEVEL"),
+		ServiceName:        viper.GetString("SERVICE_NAME"),
+		ServiceVersion:     viper.GetString("SERVICE_VERSION"),
+		Environment:        viper.GetString("ENVIRONMENT"),
+		OTLPEndpoint:       viper.GetString("OTLP_ENDPOINT"),
+		OTLPInsecure:       viper.GetBool("OTLP_INSECURE"),
 	}, nil
 }

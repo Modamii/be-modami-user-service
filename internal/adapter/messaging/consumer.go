@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	"github.com/modami/user-service/internal/domain"
 	"github.com/modami/user-service/internal/port"
 	"github.com/modami/user-service/internal/service"
 	pkgkafka "github.com/modami/user-service/pkg/kafka"
 	"github.com/twmb/franz-go/pkg/kgo"
+	logging "gitlab.com/lifegoeson-libs/pkg-logging"
+	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
 
 // Consumer wraps a pkg/kafka.KafkaService and dispatches auth.events to the correct handlers.
@@ -50,7 +51,7 @@ func NewConsumer(
 // Start runs the consumer loop; blocks until ctx is cancelled.
 func (c *Consumer) Start(ctx context.Context) {
 	if err := c.kafkaService.StartConsumer(ctx, []pkgkafka.ConsumerHandler{c.handler}); err != nil {
-		slog.ErrorContext(ctx, "kafka consumer exited", "error", err)
+		logger.Error(ctx, "kafka consumer exited", err)
 	}
 }
 
@@ -80,7 +81,7 @@ func (h *authEventsHandler) HandleMessage(ctx context.Context, record *kgo.Recor
 	// Idempotency check.
 	processed, err := h.processedRepo.IsProcessed(ctx, eventID)
 	if err != nil {
-		slog.ErrorContext(ctx, "idempotency check failed", "error", err, "event_id", eventID)
+		logger.Error(ctx, "idempotency check failed", err, logging.String("event_id", eventID))
 	}
 	if processed {
 		return nil
@@ -122,7 +123,7 @@ func (h *authEventsHandler) HandleMessage(ctx context.Context, record *kgo.Recor
 		handlerErr = h.userService.MarkEmailVerified(ctx, e.KeycloakID)
 
 	default:
-		slog.WarnContext(ctx, "unknown event type, skipping", "type", envelope.Type)
+		logger.Warn(ctx, "unknown event type, skipping", logging.String("type", envelope.Type))
 		return nil
 	}
 
@@ -131,7 +132,7 @@ func (h *authEventsHandler) HandleMessage(ctx context.Context, record *kgo.Recor
 	}
 
 	if err := h.processedRepo.MarkProcessed(ctx, eventID, record.Topic); err != nil {
-		slog.ErrorContext(ctx, "failed to mark event processed", "error", err, "event_id", eventID)
+		logger.Error(ctx, "failed to mark event processed", err, logging.String("event_id", eventID))
 	}
 	return nil
 }

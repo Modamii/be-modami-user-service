@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/modami/user-service/internal/domain"
 	"github.com/modami/user-service/internal/adapter/handler/middleware"
+	"github.com/modami/user-service/internal/domain"
 	"github.com/modami/user-service/internal/dto"
 	"github.com/modami/user-service/internal/service"
 	"github.com/modami/user-service/pkg/validator"
@@ -25,6 +25,21 @@ func NewAdminHandler(userService *service.UserService, kycService *service.KYCSe
 	}
 }
 
+// UpdateUserStatus godoc
+// @Summary      Update user status
+// @Description  Update a user's account status (admin only)
+// @Tags         Admin
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string                  true  "User ID (UUID)"
+// @Param        body  body      dto.UpdateStatusRequest  true  "New status"
+// @Success      200   {object}  MessageResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      401   {object}  ErrorResponse
+// @Failure      403   {object}  ErrorResponse
+// @Failure      404   {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /admin/users/{id}/status [put]
 func (h *AdminHandler) UpdateUserStatus(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
@@ -51,6 +66,18 @@ func (h *AdminHandler) UpdateUserStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "status updated"})
 }
 
+// ApproveKYC godoc
+// @Summary      Approve KYC
+// @Description  Approve a user's KYC verification (admin only)
+// @Tags         Admin
+// @Produce      json
+// @Param        id   path      string  true  "User ID (UUID)"
+// @Success      200  {object}  MessageResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      401  {object}  ErrorResponse
+// @Failure      403  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /admin/users/{id}/kyc/approve [put]
 func (h *AdminHandler) ApproveKYC(c *gin.Context) {
 	adminID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -73,6 +100,20 @@ func (h *AdminHandler) ApproveKYC(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "KYC approved"})
 }
 
+// RejectKYC godoc
+// @Summary      Reject KYC
+// @Description  Reject a user's KYC verification with a reason (admin only)
+// @Tags         Admin
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string               true  "User ID (UUID)"
+// @Param        body  body      dto.RejectKYCRequest  true  "Rejection reason"
+// @Success      200   {object}  MessageResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      401   {object}  ErrorResponse
+// @Failure      403   {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /admin/users/{id}/kyc/reject [put]
 func (h *AdminHandler) RejectKYC(c *gin.Context) {
 	adminID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -105,6 +146,19 @@ func (h *AdminHandler) RejectKYC(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "KYC rejected"})
 }
 
+// ListUsers godoc
+// @Summary      List users
+// @Description  List all users with optional search (admin only)
+// @Tags         Admin
+// @Produce      json
+// @Param        q       query     string  false  "Search query"
+// @Param        limit   query     int     false  "Results per page (max 100)"  default(20)
+// @Param        cursor  query     string  false  "Pagination cursor"
+// @Success      200     {object}  SearchUsersResponse
+// @Failure      401     {object}  ErrorResponse
+// @Failure      403     {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /admin/users [get]
 func (h *AdminHandler) ListUsers(c *gin.Context) {
 	query := c.Query("q")
 	limit := 20

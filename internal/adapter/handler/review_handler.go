@@ -21,6 +21,20 @@ func NewReviewHandler(reviewService *service.ReviewService) *ReviewHandler {
 	return &ReviewHandler{reviewService: reviewService}
 }
 
+// CreateReview godoc
+// @Summary      Create a review
+// @Description  Create a review for a user (as a buyer)
+// @Tags         Reviews
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string                  true  "Reviewee user ID (UUID)"
+// @Param        body  body      dto.CreateReviewRequest  true  "Review details"
+// @Success      201   {object}  dto.ReviewResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      401   {object}  ErrorResponse
+// @Failure      409   {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/{id}/reviews [post]
 func (h *ReviewHandler) CreateReview(c *gin.Context) {
 	reviewerID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -66,6 +80,17 @@ func (h *ReviewHandler) CreateReview(c *gin.Context) {
 	c.JSON(http.StatusCreated, toReviewResponse(review))
 }
 
+// ListReviews godoc
+// @Summary      List reviews
+// @Description  Returns a paginated list of reviews for a user
+// @Tags         Reviews
+// @Produce      json
+// @Param        id      path      string  true   "User ID (UUID)"
+// @Param        limit   query     int     false  "Results per page (max 100)"  default(20)
+// @Param        cursor  query     string  false  "Pagination cursor"
+// @Success      200     {object}  dto.ReviewListResponse
+// @Failure      400     {object}  ErrorResponse
+// @Router       /users/{id}/reviews [get]
 func (h *ReviewHandler) ListReviews(c *gin.Context) {
 	idStr := c.Param("id")
 	revieweeID, err := uuid.Parse(idStr)
@@ -99,6 +124,15 @@ func (h *ReviewHandler) ListReviews(c *gin.Context) {
 	})
 }
 
+// GetRatingSummary godoc
+// @Summary      Get rating summary
+// @Description  Returns rating statistics for a user
+// @Tags         Reviews
+// @Produce      json
+// @Param        id   path      string  true  "User ID (UUID)"
+// @Success      200  {object}  dto.RatingSummaryResponse
+// @Failure      400  {object}  ErrorResponse
+// @Router       /users/{id}/reviews/summary [get]
 func (h *ReviewHandler) GetRatingSummary(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
