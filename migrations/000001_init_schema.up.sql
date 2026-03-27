@@ -1,5 +1,6 @@
--- Enable UUID extension
+-- Enable extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Enums
 CREATE TYPE user_role AS ENUM ('buyer', 'seller');
@@ -170,6 +171,3 @@ CREATE TABLE processed_events (
 );
 
 CREATE INDEX idx_processed_events_processed_at ON processed_events(processed_at);
-
--- Enable trigram extension for fuzzy search (needed for gin_trgm_ops)
-CREATE EXTENSION IF NOT EXISTS pg_trgm;

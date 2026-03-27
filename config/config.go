@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -110,20 +109,38 @@ type ObservabilityConfig struct {
 }
 
 func Load() (*Config, error) {
-	configPath := os.Getenv("CONFIG_FILE")
-	if configPath == "" {
-		configPath = "config/config.yml"
+	v := viper.New()
+
+	// YAML config file
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
+	v.AddConfigPath(".")
+	v.AddConfigPath("./config")
+
+	// Defaults
+	v.SetDefault("server.port", "8080")
+	v.SetDefault("server.shutdown_timeout", "15s")
+	v.SetDefault("postgres.max_idle_conns", 5)
+	v.SetDefault("postgres.max_active_conns", 25)
+	v.SetDefault("postgres.sslmode", "disable")
+	v.SetDefault("app.name", "be-modami-auth-service")
+	v.SetDefault("app.version", "1.0.0")
+	v.SetDefault("log.level", "info")
+	v.SetDefault("log.format", "json")
+
+	// Read config.yml
+	if err := v.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, fmt.Errorf("read config: %w", err)
+		}
 	}
 
-	viper.SetConfigFile(configPath)
-	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("read config file %s: %w", configPath, err)
-	}
+	// Env vars override YAML (SERVER_PORT overrides server.port)
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
 
 	var cfg Config
-	if err := viper.Unmarshal(&cfg); err != nil {
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
 	}
 

@@ -21,7 +21,11 @@
       "Bash(find:*)",
       "Bash(which swag:*)",
       "Bash(swag init:*)",
-      "Bash(GOPRIVATE=gitlab.com/lifegoeson-libs/* go list -m -versions gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client 2>&1)"
+      "Bash(GOPRIVATE=gitlab.com/lifegoeson-libs/* go list -m -versions gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client 2>&1)",
+      "Bash(PGPASSWORD=postgres_password psql -U postgres -h localhost -c \"DROP DATABASE \\\\\"be-modami-auth-service\\\\\";\" 2>&1)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(make migrate-up:*)"
     ]
   }
 }

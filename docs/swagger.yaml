@@ -421,7 +421,7 @@ definitions:
           $ref: '#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse'
         type: array
     type: object
-host: localhost:8080
+host: localhost:8086
 info:
   contact: {}
   description: User service for the Modami marketplace platform.
