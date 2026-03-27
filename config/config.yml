@@ -1,0 +1,66 @@
+server:
+  port: "8080"
+
+grpc:
+  port: "9090"
+
+postgres:
+  host: "localhost"
+  port: 5432
+  schema: public
+
+  user_reader: "username"
+  password_reader: "password"
+
+  user_writer: "username"
+  password_writer: "password"
+
+  database: "be-modami-user-service"
+  sslmode: require
+  max_idle_conns: 5
+  max_active_conns: 25
+  max_conn_timeout: 10m
+  debug_log: false
+
+redis:
+  host: "localhost"
+  port: 6379
+  database: 0
+  rate_limit_database: 5
+  ttl: 259200s
+  pool_size: 100
+
+  pass: "password"
+  user_name: "username"
+
+  write_timeout: 600s
+  read_timeout: 600s
+  dial_timeout: 600s
+  tls_config:
+    insecure_skip_verify: true
+
+kafka:
+  broker_list: "localhost:9092"
+  enable: true
+  tls_enable: false
+  partition: 1
+  partitioner: "random"
+  sasl_producer_username: "username"
+  sasl_producer_password: "password"
+  sasl_consumer_username: "username"
+  sasl_consumer_password: "password"
+  user_activated_topic_name: "localhost"
+  consumer_group: "user-service-group"
+  client_id: "user-service"
+  env: "local"
+
+keycloak:
+  jwks_url: "http://localhost:8180/realms/modami/protocol/openid-connect/certs"
+
+observability:
+  service_name: "user-service"
+  service_version: "1.0.0"
+  environment: "local"
+  log_level: "debug"
+  otlp_endpoint: ""
+  otlp_insecure: true

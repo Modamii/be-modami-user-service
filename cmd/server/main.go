@@ -22,10 +22,10 @@ import (
 	"github.com/modami/user-service/internal/port"
 	"github.com/modami/user-service/internal/service"
 	pkgredis "github.com/modami/user-service/pkg/storage/redis"
-	pb "gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client/go/techinsights/user"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 	loggingmw "gitlab.com/lifegoeson-libs/pkg-logging/middleware"
+	pb "gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client/go/modami/user"
 	"google.golang.org/grpc"
 )
 
@@ -45,12 +45,12 @@ func main() {
 	}
 
 	if err := logger.Init(logging.Config{
-		ServiceName:    cfg.ServiceName,
-		ServiceVersion: cfg.ServiceVersion,
-		Environment:    cfg.Environment,
-		Level:          cfg.LogLevel,
-		OTLPEndpoint:   cfg.OTLPEndpoint,
-		Insecure:       cfg.OTLPInsecure,
+		ServiceName:    cfg.Observability.ServiceName,
+		ServiceVersion: cfg.Observability.ServiceVersion,
+		Environment:    cfg.Observability.Environment,
+		Level:          cfg.Observability.LogLevel,
+		OTLPEndpoint:   cfg.Observability.OTLPEndpoint,
+		Insecure:       cfg.Observability.OTLPInsecure,
 	}); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to init logger: %v\n", err)
 		os.Exit(1)
@@ -60,7 +60,7 @@ func main() {
 	defer logger.Shutdown(ctx)
 
 	// ── PostgreSQL ────────────────────────────────────────────────────────────
-	dbPool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	dbPool, err := pgxpool.New(ctx, cfg.Postgres.WriterDSN())
 	if err != nil {
 		logger.Error(ctx, "failed to connect to postgres", err)
 		os.Exit(1)
@@ -75,9 +75,9 @@ func main() {
 
 	// ── Redis ─────────────────────────────────────────────────────────────────
 	redisClient, err := pkgredis.NewRedisClient(pkgredis.RedisConfig{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPassword,
-		DB:       cfg.RedisDB,
+		Addr:     cfg.Redis.Addr(),
+		Password: cfg.Redis.Pass,
+		DB:       cfg.Redis.Database,
 	})
 	if err != nil {
 		logger.Warn(ctx, "redis connection failed (continuing without cache)", logging.String("error", err.Error()))
@@ -101,9 +101,9 @@ func main() {
 
 	// ── Kafka producer ────────────────────────────────────────────────────────
 	publisher, err := messaging.NewKafkaProducer(
-		cfg.KafkaBrokers,
-		cfg.KafkaEnv,
-		cfg.KafkaClientID,
+		cfg.Kafka.Brokers(),
+		cfg.Kafka.Env,
+		cfg.Kafka.ClientID,
 		outboxRepo,
 	)
 	if err != nil {
@@ -122,10 +122,10 @@ func main() {
 
 	// ── Kafka consumer ────────────────────────────────────────────────────────
 	consumer, err := messaging.NewConsumer(
-		cfg.KafkaBrokers,
-		cfg.KafkaConsumerGroup,
-		cfg.KafkaEnv,
-		cfg.KafkaClientID,
+		cfg.Kafka.Brokers(),
+		cfg.Kafka.ConsumerGroup,
+		cfg.Kafka.Env,
+		cfg.Kafka.ClientID,
 		processedEventRepo,
 		userService,
 	)
@@ -136,7 +136,7 @@ func main() {
 	defer consumer.Close()
 
 	// ── Auth middleware ───────────────────────────────────────────────────────
-	authMiddleware, authErr := middleware.NewAuthMiddleware(cfg.KeycloakJWKSURL, userService)
+	authMiddleware, authErr := middleware.NewAuthMiddleware(cfg.Keycloak.JWKSURL, userService)
 	if authErr != nil {
 		logger.Warn(ctx, "auth middleware init warning", logging.String("error", authErr.Error()))
 	}
@@ -150,7 +150,7 @@ func main() {
 	adminHandler := handler.NewAdminHandler(userService, kycService)
 
 	// ── Gin router ────────────────────────────────────────────────────────────
-	if cfg.LogLevel != "debug" {
+	if cfg.Observability.LogLevel != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	router := gin.New()
@@ -227,12 +227,12 @@ func main() {
 	pb.RegisterUserInternalServiceServer(grpcServer, grpcadapter.NewUserGRPCServer(userService, sellerService))
 
 	go func() {
-		lis, lisErr := net.Listen("tcp", fmt.Sprintf(":%s", cfg.GRPCPort))
+		lis, lisErr := net.Listen("tcp", fmt.Sprintf(":%s", cfg.GRPC.Port))
 		if lisErr != nil {
 			logger.Error(ctx, "failed to listen gRPC", lisErr)
 			os.Exit(1)
 		}
-		logger.Info(ctx, "gRPC server listening", logging.String("port", cfg.GRPCPort))
+		logger.Info(ctx, "gRPC server listening", logging.String("port", cfg.GRPC.Port))
 		if serveErr := grpcServer.Serve(lis); serveErr != nil {
 			logger.Error(ctx, "gRPC server error", serveErr)
 		}
@@ -243,7 +243,7 @@ func main() {
 		ExceptRoutes: []string{"/health", "/metrics"},
 	})
 	httpSrv := &http.Server{
-		Addr:         fmt.Sprintf(":%s", cfg.ServerPort),
+		Addr:         fmt.Sprintf(":%s", cfg.Server.Port),
 		Handler:      httpHandler,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -251,7 +251,7 @@ func main() {
 	}
 
 	go func() {
-		logger.Info(ctx, "HTTP server listening", logging.String("port", cfg.ServerPort))
+		logger.Info(ctx, "HTTP server listening", logging.String("port", cfg.Server.Port))
 		if serveErr := httpSrv.ListenAndServe(); serveErr != nil && serveErr != http.ErrServerClosed {
 			logger.Error(ctx, "HTTP server error", serveErr)
 		}
