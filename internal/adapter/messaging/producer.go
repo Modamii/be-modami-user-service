@@ -8,6 +8,8 @@ import (
 	"github.com/modami/user-service/internal/domain"
 	"github.com/modami/user-service/internal/port"
 	pkgkafka "github.com/modami/user-service/pkg/kafka"
+	logging "gitlab.com/lifegoeson-libs/pkg-logging"
+	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
 
 type kafkaProducer struct {
@@ -27,7 +29,18 @@ func NewKafkaProducer(brokers []string, env string, clientID string, outbox port
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kafka producer service: %w", err)
 	}
+
+	ctx := context.Background()
+	if err := ks.EnsureTopics(ctx); err != nil {
+		logger.Warn(ctx, "failed to ensure kafka topics", logging.String("error", err.Error()))
+	}
+
 	return &kafkaProducer{kafkaService: ks, outbox: outbox, env: env}, nil
+}
+
+func (p *kafkaProducer) PublishRaw(ctx context.Context, topic, key string, payload []byte) error {
+	msg := &pkgkafka.ProducerMessage{Key: key, Value: json.RawMessage(payload)}
+	return p.kafkaService.EmitToFullTopic(ctx, topic, msg)
 }
 
 func (p *kafkaProducer) publish(ctx context.Context, key string, value interface{}) error {

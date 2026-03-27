@@ -21,7 +21,7 @@ func NewAddressRepository(db *pgxpool.Pool) *addressRepo {
 }
 
 func (r *addressRepo) Create(ctx context.Context, addr *domain.Address) error {
-	_, err := r.db.Exec(ctx, `
+	_, err := dbFromCtx(ctx, r.db).Exec(ctx, `
 		INSERT INTO addresses (id, user_id, label, recipient_name, phone, address_line_1, address_line_2,
 			ward, district, province, postal_code, country, is_default, created_at, updated_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
@@ -33,7 +33,7 @@ func (r *addressRepo) Create(ctx context.Context, addr *domain.Address) error {
 }
 
 func (r *addressRepo) GetByID(ctx context.Context, id, userID uuid.UUID) (*domain.Address, error) {
-	row := r.db.QueryRow(ctx, `
+	row := dbFromCtx(ctx, r.db).QueryRow(ctx, `
 		SELECT id, user_id, label, recipient_name, phone, address_line_1, address_line_2,
 			ward, district, province, postal_code, country, is_default, created_at, updated_at
 		FROM addresses WHERE id = $1 AND user_id = $2`, id, userID)
@@ -57,7 +57,7 @@ func (r *addressRepo) scanAddress(row pgx.Row) (*domain.Address, error) {
 }
 
 func (r *addressRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*domain.Address, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := dbFromCtx(ctx, r.db).Query(ctx, `
 		SELECT id, user_id, label, recipient_name, phone, address_line_1, address_line_2,
 			ward, district, province, postal_code, country, is_default, created_at, updated_at
 		FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, created_at ASC`, userID)
@@ -82,7 +82,7 @@ func (r *addressRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*do
 }
 
 func (r *addressRepo) Update(ctx context.Context, addr *domain.Address) error {
-	ct, err := r.db.Exec(ctx, `
+	ct, err := dbFromCtx(ctx, r.db).Exec(ctx, `
 		UPDATE addresses SET label=$1, recipient_name=$2, phone=$3, address_line_1=$4, address_line_2=$5,
 			ward=$6, district=$7, province=$8, postal_code=$9, country=$10, is_default=$11, updated_at=$12
 		WHERE id=$13 AND user_id=$14`,
@@ -100,7 +100,7 @@ func (r *addressRepo) Update(ctx context.Context, addr *domain.Address) error {
 }
 
 func (r *addressRepo) Delete(ctx context.Context, id, userID uuid.UUID) error {
-	ct, err := r.db.Exec(ctx, `DELETE FROM addresses WHERE id=$1 AND user_id=$2`, id, userID)
+	ct, err := dbFromCtx(ctx, r.db).Exec(ctx, `DELETE FROM addresses WHERE id=$1 AND user_id=$2`, id, userID)
 	if err != nil {
 		return err
 	}
@@ -111,36 +111,43 @@ func (r *addressRepo) Delete(ctx context.Context, id, userID uuid.UUID) error {
 }
 
 func (r *addressRepo) SetDefault(ctx context.Context, id, userID uuid.UUID) error {
+	run := func(db DBTX) error {
+		_, err := db.Exec(ctx,
+			`UPDATE addresses SET is_default=false, updated_at=$1 WHERE user_id=$2 AND is_default=true`,
+			time.Now(), userID,
+		)
+		if err != nil {
+			return err
+		}
+		ct, err := db.Exec(ctx,
+			`UPDATE addresses SET is_default=true, updated_at=$1 WHERE id=$2 AND user_id=$3`,
+			time.Now(), id, userID,
+		)
+		if err != nil {
+			return err
+		}
+		if ct.RowsAffected() == 0 {
+			return apperror.ErrAddressNotFound
+		}
+		return nil
+	}
+
+	if tx, ok := txFromCtx(ctx); ok {
+		return run(tx)
+	}
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
-
-	_, err = tx.Exec(ctx,
-		`UPDATE addresses SET is_default=false, updated_at=$1 WHERE user_id=$2 AND is_default=true`,
-		time.Now(), userID,
-	)
-	if err != nil {
+	if err := run(tx); err != nil {
 		return err
 	}
-
-	ct, err := tx.Exec(ctx,
-		`UPDATE addresses SET is_default=true, updated_at=$1 WHERE id=$2 AND user_id=$3`,
-		time.Now(), id, userID,
-	)
-	if err != nil {
-		return err
-	}
-	if ct.RowsAffected() == 0 {
-		return apperror.ErrAddressNotFound
-	}
-
 	return tx.Commit(ctx)
 }
 
 func (r *addressRepo) CountByUserID(ctx context.Context, userID uuid.UUID) (int, error) {
 	var count int
-	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM addresses WHERE user_id=$1`, userID).Scan(&count)
+	err := dbFromCtx(ctx, r.db).QueryRow(ctx, `SELECT COUNT(*) FROM addresses WHERE user_id=$1`, userID).Scan(&count)
 	return count, err
 }

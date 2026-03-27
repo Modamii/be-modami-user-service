@@ -59,14 +59,17 @@ func (c *Consumer) Close() error {
 	return c.kafkaService.Close()
 }
 
-// authEventsHandler implements pkgkafka.ConsumerHandler for the auth.events topic.
+// authEventsHandler implements pkgkafka.ConsumerHandler for auth user topics.
 type authEventsHandler struct {
 	userService   *service.UserService
 	processedRepo port.ProcessedEventRepository
 }
 
 func (h *authEventsHandler) GetTopics() []string {
-	return []string{pkgkafka.TopicAuthEvents}
+	return []string{
+		pkgkafka.TopicAuthUserCreated,
+		pkgkafka.TopicAuthUserUpdated,
+	}
 }
 
 func (h *authEventsHandler) HandleMessage(ctx context.Context, record *kgo.Record) error {
@@ -97,30 +100,19 @@ func (h *authEventsHandler) HandleMessage(ctx context.Context, record *kgo.Recor
 
 	var handlerErr error
 	switch envelope.Type {
-	case "user.registered":
-		var event domain.UserRegisteredEvent
+	case "user.created":
+		var event domain.AuthUserCreatedEvent
 		if err := json.Unmarshal(record.Value, &event); err != nil {
-			return fmt.Errorf("failed to unmarshal UserRegisteredEvent: %w", err)
+			return fmt.Errorf("failed to unmarshal user.created: %w", err)
 		}
 		handlerErr = h.userService.CreateFromEvent(ctx, &event)
 
-	case "user.deleted":
-		var e struct {
-			KeycloakID string `json:"keycloak_id"`
+	case "user.updated":
+		var event domain.AuthUserUpdatedEvent
+		if err := json.Unmarshal(record.Value, &event); err != nil {
+			return fmt.Errorf("failed to unmarshal user.updated: %w", err)
 		}
-		if err := json.Unmarshal(record.Value, &e); err != nil {
-			return fmt.Errorf("failed to unmarshal user.deleted: %w", err)
-		}
-		handlerErr = h.userService.SoftDeleteByKeycloakID(ctx, e.KeycloakID)
-
-	case "user.email_verified":
-		var e struct {
-			KeycloakID string `json:"keycloak_id"`
-		}
-		if err := json.Unmarshal(record.Value, &e); err != nil {
-			return fmt.Errorf("failed to unmarshal user.email_verified: %w", err)
-		}
-		handlerErr = h.userService.MarkEmailVerified(ctx, e.KeycloakID)
+		handlerErr = h.userService.SyncFromAuthUpdate(ctx, &event)
 
 	default:
 		logger.Warn(ctx, "unknown event type, skipping", logging.String("type", envelope.Type))

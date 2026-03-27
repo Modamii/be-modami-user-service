@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"math"
 	"time"
 
@@ -17,7 +18,9 @@ type ReviewService struct {
 	userRepo   port.UserRepository
 	sellerRepo port.SellerProfileRepository
 	cache      port.CacheService
-	publisher  port.EventPublisher
+	txManager  port.TxManager
+	outboxRepo port.OutboxRepository
+	topic      string
 }
 
 func NewReviewService(
@@ -25,14 +28,18 @@ func NewReviewService(
 	userRepo port.UserRepository,
 	sellerRepo port.SellerProfileRepository,
 	cache port.CacheService,
-	publisher port.EventPublisher,
+	txManager port.TxManager,
+	outboxRepo port.OutboxRepository,
+	topic string,
 ) *ReviewService {
 	return &ReviewService{
 		reviewRepo: reviewRepo,
 		userRepo:   userRepo,
 		sellerRepo: sellerRepo,
 		cache:      cache,
-		publisher:  publisher,
+		txManager:  txManager,
+		outboxRepo: outboxRepo,
+		topic:      topic,
 	}
 }
 
@@ -68,24 +75,25 @@ func (s *ReviewService) CreateReview(
 		UpdatedAt:   now,
 	}
 
-	if err := s.reviewRepo.Create(ctx, review); err != nil {
+	if err := s.txManager.RunInTx(ctx, func(ctx context.Context) error {
+		if err := s.reviewRepo.Create(ctx, review); err != nil {
+			return err
+		}
+		if err := s.reviewRepo.UpsertRatingSummary(ctx, revieweeID, rating); err != nil {
+			return err
+		}
+		_ = s.cache.DeleteRatingSummary(ctx, revieweeID)
+		_ = s.recalcTrustScore(ctx, revieweeID)
+		payload, _ := json.Marshal(&domain.UserReviewCreatedEvent{
+			ReviewerID: reviewerID,
+			RevieweeID: revieweeID,
+			OrderID:    orderID,
+			Rating:     rating,
+		})
+		return s.outboxRepo.Create(ctx, s.topic, reviewerID.String(), payload)
+	}); err != nil {
 		return nil, err
 	}
-
-	if err := s.reviewRepo.UpsertRatingSummary(ctx, revieweeID, rating); err != nil {
-		return nil, err
-	}
-
-	_ = s.cache.DeleteRatingSummary(ctx, revieweeID)
-
-	_ = s.recalcTrustScore(ctx, revieweeID)
-
-	_ = s.publisher.PublishUserReviewCreated(ctx, &domain.UserReviewCreatedEvent{
-		ReviewerID: reviewerID,
-		RevieweeID: revieweeID,
-		OrderID:    orderID,
-		Rating:     rating,
-	})
 
 	return review, nil
 }

@@ -7,13 +7,24 @@ import (
 )
 
 // Consumed events (from auth service)
-type UserRegisteredEvent struct {
-	EventID    string    `json:"event_id"`
-	KeycloakID string    `json:"keycloak_id"`
-	Email      string    `json:"email"`
-	FullName   string    `json:"full_name"`
-	Phone      string    `json:"phone"`
-	CreatedAt  time.Time `json:"created_at"`
+type AuthUserCreatedEvent struct {
+	Type      string    `json:"type"`
+	Timestamp time.Time `json:"timestamp"`
+	UserID    string    `json:"userId"`
+	Email     string    `json:"email"`
+	Username  string    `json:"username"`
+	FirstName string    `json:"firstName"`
+	LastName  string    `json:"lastName"`
+}
+
+type AuthUserUpdatedEvent struct {
+	Type      string    `json:"type"`
+	Timestamp time.Time `json:"timestamp"`
+	UserID    string    `json:"userId"`
+	Email     *string   `json:"email,omitempty"`
+	Username  *string   `json:"username,omitempty"`
+	FirstName *string   `json:"firstName,omitempty"`
+	LastName  *string   `json:"lastName,omitempty"`
 }
 
 type UserDeletedEvent struct {

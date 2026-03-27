@@ -19,6 +19,7 @@ import (
 	"github.com/modami/user-service/internal/adapter/repository"
 	"github.com/modami/user-service/internal/port"
 	"github.com/modami/user-service/internal/service"
+	pkgkafka "github.com/modami/user-service/pkg/kafka"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 	loggingmw "gitlab.com/lifegoeson-libs/pkg-logging/middleware"
@@ -44,6 +45,8 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	outboxRepo := repository.NewOutboxRepository(conns.DB)
 	processedEventRepo := repository.NewProcessedEventRepository(conns.DB)
 
+	txManager := repository.NewTxManager(conns.DB)
+
 	cacheService := cache.NewRedisCache(conns.Redis)
 
 	publisher, err := messaging.NewKafkaProducer(
@@ -56,12 +59,14 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 		return nil, fmt.Errorf("create kafka producer: %w", err)
 	}
 
-	userService := service.NewUserService(userRepo, cacheService, publisher)
-	followService := service.NewFollowService(followRepo, cacheService, publisher)
-	reviewService := service.NewReviewService(reviewRepo, userRepo, sellerRepo, cacheService, publisher)
+	eventsTopic := pkgkafka.GetTopicWithEnv(cfg.Kafka.Env, pkgkafka.TopicUserEvents)
+
+	userService := service.NewUserService(userRepo, cacheService, txManager, outboxRepo, eventsTopic)
+	followService := service.NewFollowService(followRepo, cacheService, txManager, outboxRepo, eventsTopic)
+	reviewService := service.NewReviewService(reviewRepo, userRepo, sellerRepo, cacheService, txManager, outboxRepo, eventsTopic)
 	addressService := service.NewAddressService(addressRepo, cacheService)
 	sellerService := service.NewSellerService(sellerRepo, userRepo, cacheService)
-	kycService := service.NewKYCService(kycRepo, sellerRepo, userRepo, cacheService, publisher)
+	kycService := service.NewKYCService(kycRepo, sellerRepo, userRepo, cacheService, txManager, outboxRepo, eventsTopic)
 
 	consumer, err := messaging.NewConsumer(
 		cfg.Kafka.Brokers(),
@@ -197,13 +202,20 @@ func runOutboxWorker(ctx context.Context, outboxRepo port.OutboxRepository, publ
 	}
 }
 
-func processOutboxEvents(ctx context.Context, outboxRepo port.OutboxRepository, _ port.EventPublisher) {
+func processOutboxEvents(ctx context.Context, outboxRepo port.OutboxRepository, publisher port.EventPublisher) {
 	events, err := outboxRepo.GetPending(ctx, 50)
 	if err != nil {
 		logger.Error(ctx, "outbox: get pending error", err)
 		return
 	}
 	for _, event := range events {
-		logger.Info(ctx, "outbox: pending event", logging.String("id", event.ID.String()), logging.String("topic", event.Topic))
+		if err := publisher.PublishRaw(ctx, event.Topic, event.Key, event.Payload); err != nil {
+			logger.Error(ctx, "outbox: publish failed", err, logging.String("id", event.ID.String()))
+			_ = outboxRepo.MarkFailed(ctx, event.ID)
+			continue
+		}
+		if err := outboxRepo.MarkSent(ctx, event.ID); err != nil {
+			logger.Error(ctx, "outbox: mark sent failed", err, logging.String("id", event.ID.String()))
+		}
 	}
 }

@@ -79,6 +79,29 @@ func (k *KafkaService) Emit(ctx context.Context, topic string, message *Producer
 	return nil
 }
 
+// EmitToFullTopic sends a message to an already fully-qualified topic name (no env prefix added).
+func (k *KafkaService) EmitToFullTopic(ctx context.Context, topic string, message *ProducerMessage) error {
+	valueBytes, err := json.Marshal(message.Value)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message value: %w", err)
+	}
+
+	headers := k.buildHeaders(ctx, message.Headers)
+	headers = InjectTraceContext(ctx, headers)
+
+	record := &kgo.Record{
+		Topic:   topic,
+		Key:     []byte(message.Key),
+		Value:   valueBytes,
+		Headers: headers,
+	}
+
+	if err := k.client.ProduceSync(ctx, record).FirstErr(); err != nil {
+		return fmt.Errorf("failed to send message to topic %s: %w", topic, err)
+	}
+	return nil
+}
+
 // EmitAsync sends a message asynchronously, detached from the request context.
 func (k *KafkaService) EmitAsync(ctx context.Context, topic string, message *ProducerMessage) {
 	topicName := GetTopicWithEnv(k.env, topic)
@@ -147,11 +170,7 @@ func (k *KafkaService) SendMessages(ctx context.Context, topic string, messages 
 func (k *KafkaService) EnsureTopics(ctx context.Context) error {
 	adm := kadm.NewClient(k.client)
 
-	baseTopics := GetAllTopics()
-	targetTopics := make([]string, 0, len(baseTopics))
-	for _, t := range baseTopics {
-		targetTopics = append(targetTopics, GetTopicWithEnv(k.env, t))
-	}
+	targetTopics := GetAllTopics(k.env)
 
 	logger.Info(ctx, "ensuring kafka topics exist", logging.Int("count", len(targetTopics)))
 

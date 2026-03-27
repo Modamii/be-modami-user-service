@@ -75,3 +75,7 @@ type ProcessedEventRepository interface {
 	MarkProcessed(ctx context.Context, eventID, topic string) error
 	Cleanup(ctx context.Context, olderThan time.Duration) error
 }
+
+type TxManager interface {
+	RunInTx(ctx context.Context, fn func(ctx context.Context) error) error
+}

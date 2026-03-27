@@ -18,9 +18,9 @@ func NewUserRegisteredHandler(userService *service.UserService) *UserRegisteredH
 }
 
 func (h *UserRegisteredHandler) Handle(ctx context.Context, payload []byte) error {
-	var event domain.UserRegisteredEvent
+	var event domain.AuthUserCreatedEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
-		return fmt.Errorf("failed to unmarshal UserRegisteredEvent: %w", err)
+		return fmt.Errorf("failed to unmarshal AuthUserCreatedEvent: %w", err)
 	}
 	return h.userService.CreateFromEvent(ctx, &event)
 }

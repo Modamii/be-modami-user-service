@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,7 +17,9 @@ type KYCService struct {
 	sellerRepo port.SellerProfileRepository
 	userRepo   port.UserRepository
 	cache      port.CacheService
-	publisher  port.EventPublisher
+	txManager  port.TxManager
+	outboxRepo port.OutboxRepository
+	topic      string
 }
 
 func NewKYCService(
@@ -24,14 +27,18 @@ func NewKYCService(
 	sellerRepo port.SellerProfileRepository,
 	userRepo port.UserRepository,
 	cache port.CacheService,
-	publisher port.EventPublisher,
+	txManager port.TxManager,
+	outboxRepo port.OutboxRepository,
+	topic string,
 ) *KYCService {
 	return &KYCService{
 		kycRepo:    kycRepo,
 		sellerRepo: sellerRepo,
 		userRepo:   userRepo,
 		cache:      cache,
-		publisher:  publisher,
+		txManager:  txManager,
+		outboxRepo: outboxRepo,
+		topic:      topic,
 	}
 }
 
@@ -102,36 +109,37 @@ func (s *KYCService) ApproveKYC(ctx context.Context, userID, adminID uuid.UUID) 
 		return apperror.ErrInvalidKYCState
 	}
 
-	now := time.Now()
-	if err := s.kycRepo.UpdateStatus(ctx, userID, domain.KYCDocStatusApproved, "", adminID); err != nil {
-		return err
-	}
-
-	if err := s.sellerRepo.UpdateKYCStatus(ctx, userID, domain.KYCStatusApproved, &now); err != nil {
-		return err
-	}
-
 	// Upgrade user role to seller
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return err
 	}
 	oldRole := user.Role
-	if err := s.userRepo.UpdateRole(ctx, userID, domain.UserRoleSeller); err != nil {
-		return err
-	}
 
-	_ = s.cache.DeleteKYCStatus(ctx, userID)
-	_ = s.cache.DeleteSellerProfile(ctx, userID)
-	_ = s.cache.DeleteProfile(ctx, userID)
+	now := time.Now()
 
-	_ = s.publisher.PublishUserRoleUpgraded(ctx, &domain.UserRoleUpgradedEvent{
-		UserID:  userID,
-		OldRole: oldRole,
-		NewRole: domain.UserRoleSeller,
+	return s.txManager.RunInTx(ctx, func(ctx context.Context) error {
+		if err := s.kycRepo.UpdateStatus(ctx, userID, domain.KYCDocStatusApproved, "", adminID); err != nil {
+			return err
+		}
+		if err := s.sellerRepo.UpdateKYCStatus(ctx, userID, domain.KYCStatusApproved, &now); err != nil {
+			return err
+		}
+		if err := s.userRepo.UpdateRole(ctx, userID, domain.UserRoleSeller); err != nil {
+			return err
+		}
+
+		_ = s.cache.DeleteKYCStatus(ctx, userID)
+		_ = s.cache.DeleteSellerProfile(ctx, userID)
+		_ = s.cache.DeleteProfile(ctx, userID)
+
+		payload, _ := json.Marshal(&domain.UserRoleUpgradedEvent{
+			UserID:  userID,
+			OldRole: oldRole,
+			NewRole: domain.UserRoleSeller,
+		})
+		return s.outboxRepo.Create(ctx, s.topic, userID.String(), payload)
 	})
-
-	return nil
 }
 
 func (s *KYCService) RejectKYC(ctx context.Context, userID, adminID uuid.UUID, reason string) error {

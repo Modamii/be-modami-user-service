@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,20 +15,26 @@ import (
 )
 
 type UserService struct {
-	userRepo  port.UserRepository
-	cache     port.CacheService
-	publisher port.EventPublisher
+	userRepo   port.UserRepository
+	cache      port.CacheService
+	txManager  port.TxManager
+	outboxRepo port.OutboxRepository
+	topic      string
 }
 
 func NewUserService(
 	userRepo port.UserRepository,
 	cache port.CacheService,
-	publisher port.EventPublisher,
+	txManager port.TxManager,
+	outboxRepo port.OutboxRepository,
+	topic string,
 ) *UserService {
 	return &UserService{
-		userRepo:  userRepo,
-		cache:     cache,
-		publisher: publisher,
+		userRepo:   userRepo,
+		cache:      cache,
+		txManager:  txManager,
+		outboxRepo: outboxRepo,
+		topic:      topic,
 	}
 }
 
@@ -83,17 +91,18 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID uuid.UUID, req d
 		changedFields["date_of_birth"] = *req.DateOfBirth
 	}
 
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	if err := s.txManager.RunInTx(ctx, func(ctx context.Context) error {
+		if err := s.userRepo.Update(ctx, user); err != nil {
+			return err
+		}
+		_ = s.cache.DeleteProfile(ctx, userID)
+		if len(changedFields) > 0 {
+			payload, _ := json.Marshal(&domain.UserUpdatedEvent{UserID: userID, ChangedFields: changedFields})
+			return s.outboxRepo.Create(ctx, s.topic, userID.String(), payload)
+		}
+		return nil
+	}); err != nil {
 		return nil, err
-	}
-
-	_ = s.cache.DeleteProfile(ctx, userID)
-
-	if len(changedFields) > 0 {
-		_ = s.publisher.PublishUserUpdated(ctx, &domain.UserUpdatedEvent{
-			UserID:        userID,
-			ChangedFields: changedFields,
-		})
 	}
 
 	return user, nil
@@ -158,19 +167,17 @@ func (s *UserService) SearchUsers(ctx context.Context, query string, limit int, 
 }
 
 func (s *UserService) UpdateStatus(ctx context.Context, userID uuid.UUID, status domain.UserStatus, reason string) error {
-	if err := s.userRepo.UpdateStatus(ctx, userID, status); err != nil {
-		return err
-	}
-	_ = s.cache.DeleteProfile(ctx, userID)
-
-	if status == domain.UserStatusSuspended {
-		_ = s.publisher.PublishUserSuspended(ctx, &domain.UserSuspendedEvent{
-			UserID:      userID,
-			Reason:      reason,
-			SuspendedAt: time.Now(),
-		})
-	}
-	return nil
+	return s.txManager.RunInTx(ctx, func(ctx context.Context) error {
+		if err := s.userRepo.UpdateStatus(ctx, userID, status); err != nil {
+			return err
+		}
+		_ = s.cache.DeleteProfile(ctx, userID)
+		if status == domain.UserStatusSuspended {
+			payload, _ := json.Marshal(&domain.UserSuspendedEvent{UserID: userID, Reason: reason, SuspendedAt: time.Now()})
+			return s.outboxRepo.Create(ctx, s.topic, userID.String(), payload)
+		}
+		return nil
+	})
 }
 
 func (s *UserService) MarkEmailVerified(ctx context.Context, keycloakID string) error {
@@ -193,9 +200,8 @@ func (s *UserService) SoftDeleteByKeycloakID(ctx context.Context, keycloakID str
 	return s.userRepo.SoftDelete(ctx, user.ID)
 }
 
-func (s *UserService) CreateFromEvent(ctx context.Context, event *domain.UserRegisteredEvent) error {
-	// Check if already exists
-	existing, err := s.userRepo.GetByKeycloakID(ctx, event.KeycloakID)
+func (s *UserService) CreateFromEvent(ctx context.Context, event *domain.AuthUserCreatedEvent) error {
+	existing, err := s.userRepo.GetByKeycloakID(ctx, event.UserID)
 	if err != nil && err != apperror.ErrNotFound {
 		return err
 	}
@@ -206,10 +212,10 @@ func (s *UserService) CreateFromEvent(ctx context.Context, event *domain.UserReg
 	now := time.Now()
 	user := &domain.User{
 		ID:            uuid.New(),
-		KeycloakID:    event.KeycloakID,
+		KeycloakID:    event.UserID,
 		Email:         event.Email,
-		FullName:      event.FullName,
-		Phone:         event.Phone,
+		Username:      event.Username,
+		FullName:      strings.TrimSpace(event.FirstName + " " + event.LastName),
 		Role:          domain.UserRoleBuyer,
 		Status:        domain.UserStatusActive,
 		EmailVerified: false,
@@ -219,17 +225,49 @@ func (s *UserService) CreateFromEvent(ctx context.Context, event *domain.UserReg
 		UpdatedAt:     now,
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
-		return err
-	}
-
-	_ = s.publisher.PublishUserProfileCreated(ctx, &domain.UserProfileCreatedEvent{
+	outboxPayload, err := json.Marshal(&domain.UserProfileCreatedEvent{
 		UserID:     user.ID,
 		KeycloakID: user.KeycloakID,
 		Role:       user.Role,
 		Status:     user.Status,
 	})
+	if err != nil {
+		return err
+	}
 
+	return s.txManager.RunInTx(ctx, func(ctx context.Context) error {
+		if err := s.userRepo.Create(ctx, user); err != nil {
+			return err
+		}
+		return s.outboxRepo.Create(ctx, s.topic, user.ID.String(), outboxPayload)
+	})
+}
+
+func (s *UserService) SyncFromAuthUpdate(ctx context.Context, event *domain.AuthUserUpdatedEvent) error {
+	user, err := s.userRepo.GetByKeycloakID(ctx, event.UserID)
+	if err != nil {
+		return err
+	}
+
+	if event.Email != nil {
+		user.Email = *event.Email
+	}
+	if event.FirstName != nil || event.LastName != nil {
+		firstName := event.FirstName
+		lastName := event.LastName
+		if firstName == nil {
+			firstName = &user.FullName
+		}
+		if lastName == nil {
+			lastName = new(string)
+		}
+		user.FullName = strings.TrimSpace(*firstName + " " + *lastName)
+	}
+
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return err
+	}
+	_ = s.cache.DeleteProfile(ctx, user.ID)
 	return nil
 }
 

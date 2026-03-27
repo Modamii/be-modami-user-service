@@ -21,7 +21,7 @@ func NewReviewRepository(db *pgxpool.Pool) *reviewRepo {
 }
 
 func (r *reviewRepo) Create(ctx context.Context, review *domain.Review) error {
-	_, err := r.db.Exec(ctx, `
+	_, err := dbFromCtx(ctx, r.db).Exec(ctx, `
 		INSERT INTO reviews (id, reviewer_id, reviewee_id, order_id, rating, comment, role, is_anonymous, created_at, updated_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
 		review.ID, review.ReviewerID, review.RevieweeID, review.OrderID,
@@ -32,14 +32,14 @@ func (r *reviewRepo) Create(ctx context.Context, review *domain.Review) error {
 }
 
 func (r *reviewRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Review, error) {
-	row := r.db.QueryRow(ctx, `
+	row := dbFromCtx(ctx, r.db).QueryRow(ctx, `
 		SELECT id, reviewer_id, reviewee_id, order_id, rating, comment, role, is_anonymous, created_at, updated_at
 		FROM reviews WHERE id = $1`, id)
 	return r.scanReview(row)
 }
 
 func (r *reviewRepo) GetByOrderID(ctx context.Context, orderID uuid.UUID) (*domain.Review, error) {
-	row := r.db.QueryRow(ctx, `
+	row := dbFromCtx(ctx, r.db).QueryRow(ctx, `
 		SELECT id, reviewer_id, reviewee_id, order_id, rating, comment, role, is_anonymous, created_at, updated_at
 		FROM reviews WHERE order_id = $1`, orderID)
 	return r.scanReview(row)
@@ -65,14 +65,14 @@ func (r *reviewRepo) ListByReviewee(ctx context.Context, revieweeID uuid.UUID, l
 	var rows pgx.Rows
 	var err error
 	if cursor != nil {
-		rows, err = r.db.Query(ctx, `
+		rows, err = dbFromCtx(ctx, r.db).Query(ctx, `
 			SELECT id, reviewer_id, reviewee_id, order_id, rating, comment, role, is_anonymous, created_at, updated_at
 			FROM reviews WHERE reviewee_id = $1 AND created_at < $2
 			ORDER BY created_at DESC LIMIT $3`,
 			revieweeID, cursor, limit,
 		)
 	} else {
-		rows, err = r.db.Query(ctx, `
+		rows, err = dbFromCtx(ctx, r.db).Query(ctx, `
 			SELECT id, reviewer_id, reviewee_id, order_id, rating, comment, role, is_anonymous, created_at, updated_at
 			FROM reviews WHERE reviewee_id = $1
 			ORDER BY created_at DESC LIMIT $2`,
@@ -100,7 +100,7 @@ func (r *reviewRepo) ListByReviewee(ctx context.Context, revieweeID uuid.UUID, l
 }
 
 func (r *reviewRepo) GetRatingSummary(ctx context.Context, userID uuid.UUID) (*domain.RatingSummary, error) {
-	row := r.db.QueryRow(ctx, `
+	row := dbFromCtx(ctx, r.db).QueryRow(ctx, `
 		SELECT user_id, avg_rating, total_reviews, count_1, count_2, count_3, count_4, count_5
 		FROM rating_summaries WHERE user_id = $1`, userID)
 	rs := &domain.RatingSummary{}
@@ -115,7 +115,7 @@ func (r *reviewRepo) GetRatingSummary(ctx context.Context, userID uuid.UUID) (*d
 }
 
 func (r *reviewRepo) UpsertRatingSummary(ctx context.Context, userID uuid.UUID, rating int) error {
-	_, err := r.db.Exec(ctx, `
+	_, err := dbFromCtx(ctx, r.db).Exec(ctx, `
 		INSERT INTO rating_summaries (user_id, avg_rating, total_reviews, count_1, count_2, count_3, count_4, count_5)
 		VALUES ($1, $2, 1, $3, $4, $5, $6, $7)
 		ON CONFLICT (user_id) DO UPDATE SET

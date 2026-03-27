@@ -19,7 +19,7 @@ func NewOutboxRepository(db *pgxpool.Pool) *outboxRepo {
 
 func (r *outboxRepo) Create(ctx context.Context, topic, key string, payload []byte) error {
 	id := uuid.New()
-	_, err := r.db.Exec(ctx, `
+	_, err := dbFromCtx(ctx, r.db).Exec(ctx, `
 		INSERT INTO outbox_events (id, topic, key, payload, status, created_at)
 		VALUES ($1,$2,$3,$4,'pending',$5)`,
 		id, topic, key, payload, time.Now(),
@@ -28,7 +28,7 @@ func (r *outboxRepo) Create(ctx context.Context, topic, key string, payload []by
 }
 
 func (r *outboxRepo) GetPending(ctx context.Context, limit int) ([]*domain.OutboxEvent, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := dbFromCtx(ctx, r.db).Query(ctx, `
 		SELECT id, topic, key, payload, status, created_at, sent_at
 		FROM outbox_events WHERE status='pending' ORDER BY created_at ASC LIMIT $1`, limit)
 	if err != nil {
@@ -49,13 +49,13 @@ func (r *outboxRepo) GetPending(ctx context.Context, limit int) ([]*domain.Outbo
 
 func (r *outboxRepo) MarkSent(ctx context.Context, id uuid.UUID) error {
 	now := time.Now()
-	_, err := r.db.Exec(ctx,
+	_, err := dbFromCtx(ctx, r.db).Exec(ctx,
 		`UPDATE outbox_events SET status='sent', sent_at=$1 WHERE id=$2`, now, id)
 	return err
 }
 
 func (r *outboxRepo) MarkFailed(ctx context.Context, id uuid.UUID) error {
-	_, err := r.db.Exec(ctx,
+	_, err := dbFromCtx(ctx, r.db).Exec(ctx,
 		`UPDATE outbox_events SET status='failed' WHERE id=$1`, id)
 	return err
 }
@@ -91,4 +91,3 @@ func (r *processedEventRepo) Cleanup(ctx context.Context, olderThan time.Duratio
 		`DELETE FROM processed_events WHERE processed_at < $1`, cutoff)
 	return err
 }
-

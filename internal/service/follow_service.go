@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,18 +15,24 @@ import (
 type FollowService struct {
 	followRepo port.FollowRepository
 	cache      port.CacheService
-	publisher  port.EventPublisher
+	txManager  port.TxManager
+	outboxRepo port.OutboxRepository
+	topic      string
 }
 
 func NewFollowService(
 	followRepo port.FollowRepository,
 	cache port.CacheService,
-	publisher port.EventPublisher,
+	txManager port.TxManager,
+	outboxRepo port.OutboxRepository,
+	topic string,
 ) *FollowService {
 	return &FollowService{
 		followRepo: followRepo,
 		cache:      cache,
-		publisher:  publisher,
+		txManager:  txManager,
+		outboxRepo: outboxRepo,
+		topic:      topic,
 	}
 }
 
@@ -33,7 +40,6 @@ func (s *FollowService) Follow(ctx context.Context, followerID, followingID uuid
 	if followerID == followingID {
 		return apperror.ErrSelfFollow
 	}
-
 	already, err := s.followRepo.IsFollowing(ctx, followerID, followingID)
 	if err != nil {
 		return err
@@ -42,20 +48,22 @@ func (s *FollowService) Follow(ctx context.Context, followerID, followingID uuid
 		return apperror.ErrAlreadyFollowing
 	}
 
-	// Follow repo handles tx internally (insert follow + update counts)
-	if err := s.followRepo.Follow(ctx, followerID, followingID); err != nil {
-		return err
-	}
-
-	_ = s.cache.DeleteFollowKeys(ctx, followerID, followingID)
-
-	_ = s.publisher.PublishUserFollowed(ctx, &domain.UserFollowedEvent{
+	payload, err := json.Marshal(&domain.UserFollowedEvent{
 		FollowerID:  followerID,
 		FollowingID: followingID,
 		Timestamp:   time.Now(),
 	})
+	if err != nil {
+		return err
+	}
 
-	return nil
+	return s.txManager.RunInTx(ctx, func(ctx context.Context) error {
+		if err := s.followRepo.Follow(ctx, followerID, followingID); err != nil {
+			return err
+		}
+		_ = s.cache.DeleteFollowKeys(ctx, followerID, followingID)
+		return s.outboxRepo.Create(ctx, s.topic, followerID.String(), payload)
+	})
 }
 
 func (s *FollowService) Unfollow(ctx context.Context, followerID, followingID uuid.UUID) error {
@@ -63,18 +71,21 @@ func (s *FollowService) Unfollow(ctx context.Context, followerID, followingID uu
 		return apperror.ErrSelfFollow
 	}
 
-	if err := s.followRepo.Unfollow(ctx, followerID, followingID); err != nil {
-		return err
-	}
-
-	_ = s.cache.DeleteFollowKeys(ctx, followerID, followingID)
-
-	_ = s.publisher.PublishUserUnfollowed(ctx, &domain.UserUnfollowedEvent{
+	payload, err := json.Marshal(&domain.UserUnfollowedEvent{
 		FollowerID:  followerID,
 		FollowingID: followingID,
 	})
+	if err != nil {
+		return err
+	}
 
-	return nil
+	return s.txManager.RunInTx(ctx, func(ctx context.Context) error {
+		if err := s.followRepo.Unfollow(ctx, followerID, followingID); err != nil {
+			return err
+		}
+		_ = s.cache.DeleteFollowKeys(ctx, followerID, followingID)
+		return s.outboxRepo.Create(ctx, s.topic, followerID.String(), payload)
+	})
 }
 
 func (s *FollowService) GetFollowers(ctx context.Context, userID uuid.UUID, limit int, cursorStr string) ([]*domain.FollowUser, string, error) {
