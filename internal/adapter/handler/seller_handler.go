@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/modami/user-service/internal/adapter/handler/middleware"
@@ -10,6 +8,7 @@ import (
 	"github.com/modami/user-service/internal/dto"
 	"github.com/modami/user-service/internal/service"
 	"github.com/modami/user-service/pkg/validator"
+	"gitlab.com/lifegoeson-libs/pkg-gokit/response"
 )
 
 type SellerHandler struct {
@@ -32,25 +31,25 @@ func NewSellerHandler(sellerService *service.SellerService, kycService *service.
 // @Produce      json
 // @Param        body  body      dto.RegisterSellerRequest  true  "Seller registration details"
 // @Success      201   {object}  dto.SellerProfileResponse
-// @Failure      400   {object}  ErrorResponse
-// @Failure      401   {object}  ErrorResponse
-// @Failure      409   {object}  ErrorResponse  "Already a seller"
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      409   {object}  response.Response  "Already a seller"
 // @Security     BearerAuth
 // @Router       /users/me/seller/register [post]
 func (h *SellerHandler) Register(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	var req dto.RegisterSellerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 	if err := validator.Validate(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
@@ -60,7 +59,7 @@ func (h *SellerHandler) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, toSellerProfileResponse(profile))
+	response.Created(c.Writer, toSellerProfileResponse(profile))
 }
 
 // UpdateProfile godoc
@@ -71,25 +70,25 @@ func (h *SellerHandler) Register(c *gin.Context) {
 // @Produce      json
 // @Param        body  body      dto.UpdateSellerProfileRequest  true  "Fields to update"
 // @Success      200   {object}  dto.SellerProfileResponse
-// @Failure      400   {object}  ErrorResponse
-// @Failure      401   {object}  ErrorResponse
-// @Failure      404   {object}  ErrorResponse
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      404   {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me/seller/profile [put]
 func (h *SellerHandler) UpdateProfile(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	var req dto.UpdateSellerProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 	if err := validator.Validate(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
@@ -99,7 +98,7 @@ func (h *SellerHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toSellerProfileResponse(profile))
+	response.OK(c.Writer, toSellerProfileResponse(profile))
 }
 
 // GetShopProfile godoc
@@ -109,14 +108,14 @@ func (h *SellerHandler) UpdateProfile(c *gin.Context) {
 // @Produce      json
 // @Param        id   path      string  true  "User ID (UUID)"
 // @Success      200  {object}  dto.SellerProfileResponse
-// @Failure      400  {object}  ErrorResponse
-// @Failure      404  {object}  ErrorResponse
+// @Failure      400  {object}  response.Response
+// @Failure      404  {object}  response.Response
 // @Router       /users/{id}/shop [get]
 func (h *SellerHandler) GetShopProfile(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
@@ -126,7 +125,7 @@ func (h *SellerHandler) GetShopProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toSellerProfileResponse(profile))
+	response.OK(c.Writer, toSellerProfileResponse(profile))
 }
 
 // SubmitKYC godoc
@@ -136,25 +135,25 @@ func (h *SellerHandler) GetShopProfile(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body      dto.SubmitKYCRequest  true  "KYC documents"
-// @Success      200   {object}  MessageResponse
-// @Failure      400   {object}  ErrorResponse
-// @Failure      401   {object}  ErrorResponse
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me/seller/kyc [post]
 func (h *SellerHandler) SubmitKYC(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	var req dto.SubmitKYCRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 	if err := validator.Validate(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
@@ -163,7 +162,7 @@ func (h *SellerHandler) SubmitKYC(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "KYC documents submitted"})
+	response.OK(c.Writer, gin.H{"message": "KYC documents submitted"})
 }
 
 // GetKYCStatus godoc
@@ -172,14 +171,14 @@ func (h *SellerHandler) SubmitKYC(c *gin.Context) {
 // @Tags         KYC
 // @Produce      json
 // @Success      200  {object}  dto.KYCStatusResponse
-// @Failure      401  {object}  ErrorResponse
-// @Failure      404  {object}  ErrorResponse
+// @Failure      401  {object}  response.Response
+// @Failure      404  {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me/seller/kyc/status [get]
 func (h *SellerHandler) GetKYCStatus(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
@@ -189,7 +188,7 @@ func (h *SellerHandler) GetKYCStatus(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.KYCStatusResponse{Status: string(status)})
+	response.OK(c.Writer, dto.KYCStatusResponse{Status: string(status)})
 }
 
 func toSellerProfileResponse(p *domain.SellerProfile) dto.SellerProfileResponse {

@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"errors"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -10,9 +8,10 @@ import (
 	"github.com/modami/user-service/internal/domain"
 	"github.com/modami/user-service/internal/dto"
 	"github.com/modami/user-service/internal/service"
-	"github.com/modami/user-service/pkg/apperror"
+	"gitlab.com/lifegoeson-libs/pkg-gokit/apperror"
 	"github.com/modami/user-service/pkg/validator"
 	"github.com/google/uuid"
+	"gitlab.com/lifegoeson-libs/pkg-gokit/response"
 )
 
 type UserHandler struct {
@@ -29,14 +28,14 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 // @Tags         Users
 // @Produce      json
 // @Success      200  {object}  dto.UserProfileResponse
-// @Failure      401  {object}  ErrorResponse
-// @Failure      404  {object}  ErrorResponse
+// @Failure      401  {object}  response.Response
+// @Failure      404  {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me [get]
 func (h *UserHandler) GetMyProfile(c *gin.Context) {
 	keycloakID, ok := middleware.GetKeycloakID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
@@ -46,7 +45,7 @@ func (h *UserHandler) GetMyProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toUserProfileResponse(user))
+	response.OK(c.Writer, toUserProfileResponse(user))
 }
 
 // GetProfile godoc
@@ -56,14 +55,14 @@ func (h *UserHandler) GetMyProfile(c *gin.Context) {
 // @Produce      json
 // @Param        id   path      string  true  "User ID (UUID)"
 // @Success      200  {object}  dto.UserProfileResponse
-// @Failure      400  {object}  ErrorResponse
-// @Failure      404  {object}  ErrorResponse
+// @Failure      400  {object}  response.Response
+// @Failure      404  {object}  response.Response
 // @Router       /users/{id} [get]
 func (h *UserHandler) GetProfile(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
@@ -73,7 +72,7 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toUserProfileResponse(user))
+	response.OK(c.Writer, toUserProfileResponse(user))
 }
 
 // UpdateProfile godoc
@@ -84,24 +83,24 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 // @Produce      json
 // @Param        body  body      dto.UpdateProfileRequest  true  "Profile fields to update"
 // @Success      200   {object}  dto.UserProfileResponse
-// @Failure      400   {object}  ErrorResponse
-// @Failure      401   {object}  ErrorResponse
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me [put]
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	var req dto.UpdateProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 	if err := validator.Validate(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
@@ -111,7 +110,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toUserProfileResponse(user))
+	response.OK(c.Writer, toUserProfileResponse(user))
 }
 
 // UpdateAvatar godoc
@@ -121,21 +120,21 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body      dto.UpdateAvatarRequest  true  "Avatar URL"
-// @Success      200   {object}  MessageResponse
-// @Failure      400   {object}  ErrorResponse
-// @Failure      401   {object}  ErrorResponse
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me/avatar [put]
 func (h *UserHandler) UpdateAvatar(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	var req dto.UpdateAvatarRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
@@ -144,7 +143,7 @@ func (h *UserHandler) UpdateAvatar(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "avatar updated"})
+	response.OK(c.Writer, gin.H{"message": "avatar updated"})
 }
 
 // UpdateCover godoc
@@ -154,21 +153,21 @@ func (h *UserHandler) UpdateAvatar(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body      dto.UpdateCoverRequest  true  "Cover URL"
-// @Success      200   {object}  MessageResponse
-// @Failure      400   {object}  ErrorResponse
-// @Failure      401   {object}  ErrorResponse
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me/cover [put]
 func (h *UserHandler) UpdateCover(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	var req dto.UpdateCoverRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
@@ -177,7 +176,7 @@ func (h *UserHandler) UpdateCover(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "cover updated"})
+	response.OK(c.Writer, gin.H{"message": "cover updated"})
 }
 
 // DeactivateAccount godoc
@@ -185,14 +184,14 @@ func (h *UserHandler) UpdateCover(c *gin.Context) {
 // @Description  Deactivates the authenticated user's account
 // @Tags         Users
 // @Produce      json
-// @Success      200  {object}  MessageResponse
-// @Failure      401  {object}  ErrorResponse
+// @Success      200  {object}  response.Response
+// @Failure      401  {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me [delete]
 func (h *UserHandler) DeactivateAccount(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
@@ -201,7 +200,7 @@ func (h *UserHandler) DeactivateAccount(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "account deactivated"})
+	response.OK(c.Writer, gin.H{"message": "account deactivated"})
 }
 
 // SearchUsers godoc
@@ -212,13 +211,13 @@ func (h *UserHandler) DeactivateAccount(c *gin.Context) {
 // @Param        q       query     string  true   "Search query"
 // @Param        limit   query     int     false  "Results per page (max 100)"  default(20)
 // @Param        cursor  query     string  false  "Pagination cursor"
-// @Success      200     {object}  SearchUsersResponse
-// @Failure      400     {object}  ErrorResponse
+// @Success      200     {object}  response.Response
+// @Failure      400     {object}  response.Response
 // @Router       /users/search [get]
 func (h *UserHandler) SearchUsers(c *gin.Context) {
 	query := c.Query("q")
 	if query == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "query parameter 'q' is required"})
+		response.BadRequest(c.Writer, "query parameter 'q' is required")
 		return
 	}
 
@@ -241,7 +240,7 @@ func (h *UserHandler) SearchUsers(c *gin.Context) {
 		results = append(results, toUserProfileResponse(u))
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response.OK(c.Writer, gin.H{
 		"users":  results,
 		"cursor": nextCursor,
 	})
@@ -268,34 +267,9 @@ func toUserProfileResponse(u *domain.User) dto.UserProfileResponse {
 }
 
 func handleError(c *gin.Context, err error) {
-	switch {
-	case errors.Is(err, apperror.ErrNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrUnauthorized):
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrForbidden):
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrAlreadyExists):
-		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrSelfFollow):
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrAlreadyFollowing):
-		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrNotFollowing):
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrAddressLimitReached):
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrAddressNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrReviewAlreadyExists):
-		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrInvalidKYCState):
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrAlreadySeller):
-		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-	case errors.Is(err, apperror.ErrSellerNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+	if ae := apperror.AsAppError(err); ae != nil {
+		response.Err(c.Writer, ae)
+		return
 	}
+	response.InternalError(c.Writer, "internal server error")
 }

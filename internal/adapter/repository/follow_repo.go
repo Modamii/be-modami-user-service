@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/modami/user-service/internal/domain"
-	"github.com/modami/user-service/pkg/apperror"
+	apperror "github.com/modami/user-service/internal/apperror"
 )
 
 type followRepo struct {

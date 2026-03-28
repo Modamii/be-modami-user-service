@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -9,6 +8,7 @@ import (
 	"github.com/modami/user-service/internal/adapter/handler/middleware"
 	"github.com/modami/user-service/internal/dto"
 	"github.com/modami/user-service/internal/service"
+	"gitlab.com/lifegoeson-libs/pkg-gokit/response"
 )
 
 type FollowHandler struct {
@@ -25,23 +25,23 @@ func NewFollowHandler(followService *service.FollowService) *FollowHandler {
 // @Tags         Follows
 // @Produce      json
 // @Param        id   path      string  true  "User ID to follow (UUID)"
-// @Success      200  {object}  MessageResponse
-// @Failure      400  {object}  ErrorResponse
-// @Failure      401  {object}  ErrorResponse
-// @Failure      409  {object}  ErrorResponse
+// @Success      200  {object}  response.Response
+// @Failure      400  {object}  response.Response
+// @Failure      401  {object}  response.Response
+// @Failure      409  {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/{id}/follow [post]
 func (h *FollowHandler) Follow(c *gin.Context) {
 	followerID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	followingIDStr := c.Param("id")
 	followingID, err := uuid.Parse(followingIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
@@ -50,7 +50,7 @@ func (h *FollowHandler) Follow(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "followed successfully"})
+	response.OK(c.Writer, gin.H{"message": "followed successfully"})
 }
 
 // Unfollow godoc
@@ -59,22 +59,22 @@ func (h *FollowHandler) Follow(c *gin.Context) {
 // @Tags         Follows
 // @Produce      json
 // @Param        id   path      string  true  "User ID to unfollow (UUID)"
-// @Success      200  {object}  MessageResponse
-// @Failure      400  {object}  ErrorResponse
-// @Failure      401  {object}  ErrorResponse
+// @Success      200  {object}  response.Response
+// @Failure      400  {object}  response.Response
+// @Failure      401  {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/{id}/follow [delete]
 func (h *FollowHandler) Unfollow(c *gin.Context) {
 	followerID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	followingIDStr := c.Param("id")
 	followingID, err := uuid.Parse(followingIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *FollowHandler) Unfollow(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "unfollowed successfully"})
+	response.OK(c.Writer, gin.H{"message": "unfollowed successfully"})
 }
 
 // GetFollowers godoc
@@ -95,13 +95,13 @@ func (h *FollowHandler) Unfollow(c *gin.Context) {
 // @Param        limit   query     int     false  "Results per page (max 100)"  default(20)
 // @Param        cursor  query     string  false  "Pagination cursor"
 // @Success      200     {object}  dto.FollowListResponse
-// @Failure      400     {object}  ErrorResponse
+// @Failure      400     {object}  response.Response
 // @Router       /users/{id}/followers [get]
 func (h *FollowHandler) GetFollowers(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
@@ -129,7 +129,7 @@ func (h *FollowHandler) GetFollowers(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, dto.FollowListResponse{
+	response.OK(c.Writer, dto.FollowListResponse{
 		Users:  items,
 		Cursor: nextCursor,
 	})
@@ -144,13 +144,13 @@ func (h *FollowHandler) GetFollowers(c *gin.Context) {
 // @Param        limit   query     int     false  "Results per page (max 100)"  default(20)
 // @Param        cursor  query     string  false  "Pagination cursor"
 // @Success      200     {object}  dto.FollowListResponse
-// @Failure      400     {object}  ErrorResponse
+// @Failure      400     {object}  response.Response
 // @Router       /users/{id}/following [get]
 func (h *FollowHandler) GetFollowing(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
@@ -178,7 +178,7 @@ func (h *FollowHandler) GetFollowing(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, dto.FollowListResponse{
+	response.OK(c.Writer, dto.FollowListResponse{
 		Users:  items,
 		Cursor: nextCursor,
 	})
@@ -191,21 +191,21 @@ func (h *FollowHandler) GetFollowing(c *gin.Context) {
 // @Produce      json
 // @Param        id   path      string  true  "User ID to check (UUID)"
 // @Success      200  {object}  dto.FollowStatusResponse
-// @Failure      400  {object}  ErrorResponse
-// @Failure      401  {object}  ErrorResponse
+// @Failure      400  {object}  response.Response
+// @Failure      401  {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/{id}/follow/status [get]
 func (h *FollowHandler) CheckFollowStatus(c *gin.Context) {
 	followerID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	followingIDStr := c.Param("id")
 	followingID, err := uuid.Parse(followingIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
@@ -215,5 +215,5 @@ func (h *FollowHandler) CheckFollowStatus(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.FollowStatusResponse{IsFollowing: isFollowing})
+	response.OK(c.Writer, dto.FollowStatusResponse{IsFollowing: isFollowing})
 }

@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/modami/user-service/internal/adapter/handler/middleware"
@@ -10,6 +8,7 @@ import (
 	"github.com/modami/user-service/internal/dto"
 	"github.com/modami/user-service/internal/service"
 	"github.com/modami/user-service/pkg/validator"
+	"gitlab.com/lifegoeson-libs/pkg-gokit/response"
 )
 
 type AddressHandler struct {
@@ -28,25 +27,25 @@ func NewAddressHandler(addressService *service.AddressService) *AddressHandler {
 // @Produce      json
 // @Param        body  body      dto.CreateAddressRequest  true  "Address details"
 // @Success      201   {object}  dto.AddressResponse
-// @Failure      400   {object}  ErrorResponse
-// @Failure      401   {object}  ErrorResponse
-// @Failure      422   {object}  ErrorResponse  "Address limit reached"
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      422   {object}  response.Response  "Address limit reached"
 // @Security     BearerAuth
 // @Router       /users/me/addresses [post]
 func (h *AddressHandler) AddAddress(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	var req dto.CreateAddressRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 	if err := validator.Validate(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
@@ -56,7 +55,7 @@ func (h *AddressHandler) AddAddress(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, toAddressResponse(addr))
+	response.Created(c.Writer, toAddressResponse(addr))
 }
 
 // ListAddresses godoc
@@ -64,14 +63,14 @@ func (h *AddressHandler) AddAddress(c *gin.Context) {
 // @Description  Returns all addresses for the authenticated user
 // @Tags         Addresses
 // @Produce      json
-// @Success      200  {object}  AddressListResponse
-// @Failure      401  {object}  ErrorResponse
+// @Success      200  {object}  response.Response
+// @Failure      401  {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me/addresses [get]
 func (h *AddressHandler) ListAddresses(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
@@ -86,7 +85,7 @@ func (h *AddressHandler) ListAddresses(c *gin.Context) {
 		items = append(items, toAddressResponse(a))
 	}
 
-	c.JSON(http.StatusOK, gin.H{"addresses": items})
+	response.OK(c.Writer, gin.H{"addresses": items})
 }
 
 // UpdateAddress godoc
@@ -98,32 +97,32 @@ func (h *AddressHandler) ListAddresses(c *gin.Context) {
 // @Param        addr_id  path      string                   true  "Address ID (UUID)"
 // @Param        body     body      dto.UpdateAddressRequest  true  "Fields to update"
 // @Success      200      {object}  dto.AddressResponse
-// @Failure      400      {object}  ErrorResponse
-// @Failure      401      {object}  ErrorResponse
-// @Failure      404      {object}  ErrorResponse
+// @Failure      400      {object}  response.Response
+// @Failure      401      {object}  response.Response
+// @Failure      404      {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me/addresses/{addr_id} [put]
 func (h *AddressHandler) UpdateAddress(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	addrIDStr := c.Param("addr_id")
 	addrID, err := uuid.Parse(addrIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid address id"})
+		response.BadRequest(c.Writer, "invalid address id")
 		return
 	}
 
 	var req dto.UpdateAddressRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 	if err := validator.Validate(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
@@ -133,7 +132,7 @@ func (h *AddressHandler) UpdateAddress(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toAddressResponse(addr))
+	response.OK(c.Writer, toAddressResponse(addr))
 }
 
 // DeleteAddress godoc
@@ -142,23 +141,23 @@ func (h *AddressHandler) UpdateAddress(c *gin.Context) {
 // @Tags         Addresses
 // @Produce      json
 // @Param        addr_id  path      string  true  "Address ID (UUID)"
-// @Success      200      {object}  MessageResponse
-// @Failure      400      {object}  ErrorResponse
-// @Failure      401      {object}  ErrorResponse
-// @Failure      404      {object}  ErrorResponse
+// @Success      200      {object}  response.Response
+// @Failure      400      {object}  response.Response
+// @Failure      401      {object}  response.Response
+// @Failure      404      {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me/addresses/{addr_id} [delete]
 func (h *AddressHandler) DeleteAddress(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	addrIDStr := c.Param("addr_id")
 	addrID, err := uuid.Parse(addrIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid address id"})
+		response.BadRequest(c.Writer, "invalid address id")
 		return
 	}
 
@@ -167,7 +166,7 @@ func (h *AddressHandler) DeleteAddress(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "address deleted"})
+	response.OK(c.Writer, gin.H{"message": "address deleted"})
 }
 
 // SetDefault godoc
@@ -176,23 +175,23 @@ func (h *AddressHandler) DeleteAddress(c *gin.Context) {
 // @Tags         Addresses
 // @Produce      json
 // @Param        addr_id  path      string  true  "Address ID (UUID)"
-// @Success      200      {object}  MessageResponse
-// @Failure      400      {object}  ErrorResponse
-// @Failure      401      {object}  ErrorResponse
-// @Failure      404      {object}  ErrorResponse
+// @Success      200      {object}  response.Response
+// @Failure      400      {object}  response.Response
+// @Failure      401      {object}  response.Response
+// @Failure      404      {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/me/addresses/{addr_id}/default [put]
 func (h *AddressHandler) SetDefault(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	addrIDStr := c.Param("addr_id")
 	addrID, err := uuid.Parse(addrIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid address id"})
+		response.BadRequest(c.Writer, "invalid address id")
 		return
 	}
 
@@ -201,7 +200,7 @@ func (h *AddressHandler) SetDefault(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "default address updated"})
+	response.OK(c.Writer, gin.H{"message": "default address updated"})
 }
 
 func toAddressResponse(a *domain.Address) dto.AddressResponse {

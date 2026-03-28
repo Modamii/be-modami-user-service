@@ -17,7 +17,7 @@ postgres:
   password_reader: "postgres_password"
   user_writer: "postgres"
   password_writer: "postgres_password"
-  database: "be-modami-auth-service"
+  database: "be-modami-user-service"
   sslmode: ""
   max_idle_conns: 5
   max_active_conns: 25

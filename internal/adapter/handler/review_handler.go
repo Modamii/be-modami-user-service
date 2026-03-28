@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +10,7 @@ import (
 	"github.com/modami/user-service/internal/dto"
 	"github.com/modami/user-service/internal/service"
 	"github.com/modami/user-service/pkg/validator"
+	"gitlab.com/lifegoeson-libs/pkg-gokit/response"
 )
 
 type ReviewHandler struct {
@@ -30,38 +30,38 @@ func NewReviewHandler(reviewService *service.ReviewService) *ReviewHandler {
 // @Param        id    path      string                  true  "Reviewee user ID (UUID)"
 // @Param        body  body      dto.CreateReviewRequest  true  "Review details"
 // @Success      201   {object}  dto.ReviewResponse
-// @Failure      400   {object}  ErrorResponse
-// @Failure      401   {object}  ErrorResponse
-// @Failure      409   {object}  ErrorResponse
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      409   {object}  response.Response
 // @Security     BearerAuth
 // @Router       /users/{id}/reviews [post]
 func (h *ReviewHandler) CreateReview(c *gin.Context) {
 	reviewerID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	revieweeIDStr := c.Param("id")
 	revieweeID, err := uuid.Parse(revieweeIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
 	var req dto.CreateReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 	if err := validator.Validate(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
 	orderID, err := uuid.Parse(req.OrderID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})
+		response.BadRequest(c.Writer, "invalid order id")
 		return
 	}
 
@@ -77,7 +77,7 @@ func (h *ReviewHandler) CreateReview(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, toReviewResponse(review))
+	response.Created(c.Writer, toReviewResponse(review))
 }
 
 // ListReviews godoc
@@ -89,13 +89,13 @@ func (h *ReviewHandler) CreateReview(c *gin.Context) {
 // @Param        limit   query     int     false  "Results per page (max 100)"  default(20)
 // @Param        cursor  query     string  false  "Pagination cursor"
 // @Success      200     {object}  dto.ReviewListResponse
-// @Failure      400     {object}  ErrorResponse
+// @Failure      400     {object}  response.Response
 // @Router       /users/{id}/reviews [get]
 func (h *ReviewHandler) ListReviews(c *gin.Context) {
 	idStr := c.Param("id")
 	revieweeID, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
@@ -118,7 +118,7 @@ func (h *ReviewHandler) ListReviews(c *gin.Context) {
 		items = append(items, toReviewResponse(r))
 	}
 
-	c.JSON(http.StatusOK, dto.ReviewListResponse{
+	response.OK(c.Writer, dto.ReviewListResponse{
 		Reviews: items,
 		Cursor:  nextCursor,
 	})
@@ -131,13 +131,13 @@ func (h *ReviewHandler) ListReviews(c *gin.Context) {
 // @Produce      json
 // @Param        id   path      string  true  "User ID (UUID)"
 // @Success      200  {object}  dto.RatingSummaryResponse
-// @Failure      400  {object}  ErrorResponse
+// @Failure      400  {object}  response.Response
 // @Router       /users/{id}/reviews/summary [get]
 func (h *ReviewHandler) GetRatingSummary(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
@@ -147,7 +147,7 @@ func (h *ReviewHandler) GetRatingSummary(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.RatingSummaryResponse{
+	response.OK(c.Writer, dto.RatingSummaryResponse{
 		UserID:       summary.UserID.String(),
 		AvgRating:    summary.AvgRating,
 		TotalReviews: summary.TotalReviews,

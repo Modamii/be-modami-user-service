@@ -1,15 +1,28 @@
 package handler
 
-import "github.com/modami/user-service/internal/dto"
+import (
+	"github.com/modami/user-service/internal/dto"
+	"gitlab.com/lifegoeson-libs/pkg-gokit/apperror"
+)
 
-// ErrorResponse represents an error response.
-type ErrorResponse struct {
-	Error string `json:"error" example:"error message"`
+// SwaggerResponse is the standard API envelope used in Swagger docs.
+type SwaggerResponse struct {
+	Success bool             `json:"success" example:"true"`
+	Data    any              `json:"data,omitempty"`
+	Error   *SwaggerError    `json:"error,omitempty"`
+	Meta    *SwaggerMeta     `json:"meta,omitempty"`
 }
 
-// MessageResponse represents a success message response.
-type MessageResponse struct {
-	Message string `json:"message" example:"operation successful"`
+// SwaggerError represents the error portion of a response.
+type SwaggerError struct {
+	Code    apperror.Code `json:"code" example:"BAD_REQUEST"`
+	Message string        `json:"message" example:"error message"`
+	Detail  string        `json:"detail,omitempty"`
+}
+
+// SwaggerMeta contains response metadata.
+type SwaggerMeta struct {
+	Timestamp int64 `json:"timestamp" example:"1711584000"`
 }
 
 // SearchUsersResponse represents a paginated user search result.

@@ -9,7 +9,7 @@ import (
 	"github.com/modami/user-service/internal/domain"
 	"github.com/modami/user-service/internal/dto"
 	"github.com/modami/user-service/internal/port"
-	"github.com/modami/user-service/pkg/apperror"
+	apperror "github.com/modami/user-service/internal/apperror"
 )
 
 type KYCService struct {

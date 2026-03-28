@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +10,7 @@ import (
 	"github.com/modami/user-service/internal/dto"
 	"github.com/modami/user-service/internal/service"
 	"github.com/modami/user-service/pkg/validator"
+	"gitlab.com/lifegoeson-libs/pkg-gokit/response"
 )
 
 type AdminHandler struct {
@@ -33,28 +33,28 @@ func NewAdminHandler(userService *service.UserService, kycService *service.KYCSe
 // @Produce      json
 // @Param        id    path      string                  true  "User ID (UUID)"
 // @Param        body  body      dto.UpdateStatusRequest  true  "New status"
-// @Success      200   {object}  MessageResponse
-// @Failure      400   {object}  ErrorResponse
-// @Failure      401   {object}  ErrorResponse
-// @Failure      403   {object}  ErrorResponse
-// @Failure      404   {object}  ErrorResponse
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      403   {object}  response.Response
+// @Failure      404   {object}  response.Response
 // @Security     BearerAuth
 // @Router       /admin/users/{id}/status [put]
 func (h *AdminHandler) UpdateUserStatus(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
 	var req dto.UpdateStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 	if err := validator.Validate(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
@@ -63,7 +63,7 @@ func (h *AdminHandler) UpdateUserStatus(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "status updated"})
+	response.OK(c.Writer, gin.H{"message": "status updated"})
 }
 
 // ApproveKYC godoc
@@ -72,23 +72,23 @@ func (h *AdminHandler) UpdateUserStatus(c *gin.Context) {
 // @Tags         Admin
 // @Produce      json
 // @Param        id   path      string  true  "User ID (UUID)"
-// @Success      200  {object}  MessageResponse
-// @Failure      400  {object}  ErrorResponse
-// @Failure      401  {object}  ErrorResponse
-// @Failure      403  {object}  ErrorResponse
+// @Success      200  {object}  response.Response
+// @Failure      400  {object}  response.Response
+// @Failure      401  {object}  response.Response
+// @Failure      403  {object}  response.Response
 // @Security     BearerAuth
 // @Router       /admin/users/{id}/kyc/approve [put]
 func (h *AdminHandler) ApproveKYC(c *gin.Context) {
 	adminID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
@@ -97,7 +97,7 @@ func (h *AdminHandler) ApproveKYC(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "KYC approved"})
+	response.OK(c.Writer, gin.H{"message": "KYC approved"})
 }
 
 // RejectKYC godoc
@@ -108,33 +108,33 @@ func (h *AdminHandler) ApproveKYC(c *gin.Context) {
 // @Produce      json
 // @Param        id    path      string               true  "User ID (UUID)"
 // @Param        body  body      dto.RejectKYCRequest  true  "Rejection reason"
-// @Success      200   {object}  MessageResponse
-// @Failure      400   {object}  ErrorResponse
-// @Failure      401   {object}  ErrorResponse
-// @Failure      403   {object}  ErrorResponse
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      403   {object}  response.Response
 // @Security     BearerAuth
 // @Router       /admin/users/{id}/kyc/reject [put]
 func (h *AdminHandler) RejectKYC(c *gin.Context) {
 	adminID, ok := middleware.GetUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.Unauthorized(c.Writer, "unauthorized")
 		return
 	}
 
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		response.BadRequest(c.Writer, "invalid user id")
 		return
 	}
 
 	var req dto.RejectKYCRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 	if err := validator.Validate(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c.Writer, err.Error())
 		return
 	}
 
@@ -143,7 +143,7 @@ func (h *AdminHandler) RejectKYC(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "KYC rejected"})
+	response.OK(c.Writer, gin.H{"message": "KYC rejected"})
 }
 
 // ListUsers godoc
@@ -154,9 +154,9 @@ func (h *AdminHandler) RejectKYC(c *gin.Context) {
 // @Param        q       query     string  false  "Search query"
 // @Param        limit   query     int     false  "Results per page (max 100)"  default(20)
 // @Param        cursor  query     string  false  "Pagination cursor"
-// @Success      200     {object}  SearchUsersResponse
-// @Failure      401     {object}  ErrorResponse
-// @Failure      403     {object}  ErrorResponse
+// @Success      200     {object}  response.Response
+// @Failure      401     {object}  response.Response
+// @Failure      403     {object}  response.Response
 // @Security     BearerAuth
 // @Router       /admin/users [get]
 func (h *AdminHandler) ListUsers(c *gin.Context) {
@@ -180,7 +180,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		results = append(results, toUserProfileResponse(u))
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response.OK(c.Writer, gin.H{
 		"users":  results,
 		"cursor": nextCursor,
 	})

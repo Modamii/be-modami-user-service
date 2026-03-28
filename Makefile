@@ -8,7 +8,7 @@ DB_HOST     ?= localhost
 DB_PORT     ?= 5432
 DB_USER     ?= postgres
 DB_PASSWORD ?= postgres_password
-DB_NAME     ?= be-modami-auth-service
+DB_NAME     ?= be-modami-user-service
 DB_SCHEMA   ?= public
 DB_SSLMODE  ?= disable
 DATABASE_URL ?= postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSLMODE)&search_path=$(DB_SCHEMA)
