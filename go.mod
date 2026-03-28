@@ -19,7 +19,7 @@ require (
 	github.com/twmb/franz-go/pkg/kadm v1.17.2
 	gitlab.com/lifegoeson-libs/pkg-gokit v1.0.0
 	gitlab.com/lifegoeson-libs/pkg-logging v1.0.4
-	gitlab.com/lifegoeson-libs/pkg-grpc-client v1.0.5
+	gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client v1.0.5
 	google.golang.org/grpc v1.78.0
 )
 

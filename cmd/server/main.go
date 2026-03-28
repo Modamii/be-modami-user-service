@@ -4,7 +4,7 @@ package main
 // @version         1.0
 // @description     User service for the Modami marketplace platform.
 // @host            localhost:8086
-// @BasePath        /api/v1
+// @BasePath        /v1/user-services
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization

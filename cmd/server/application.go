@@ -9,8 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/modami/user-service/config"
 	_ "github.com/modami/user-service/docs"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/modami/user-service/internal/adapter/cache"
 	grpcadapter "github.com/modami/user-service/internal/adapter/grpc"
 	"github.com/modami/user-service/internal/adapter/handler"
@@ -20,6 +18,8 @@ import (
 	"github.com/modami/user-service/internal/port"
 	"github.com/modami/user-service/internal/service"
 	pkgkafka "github.com/modami/user-service/pkg/kafka"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 	loggingmw "gitlab.com/lifegoeson-libs/pkg-logging/middleware"
@@ -36,6 +36,7 @@ type Application struct {
 }
 
 func newApplication(ctx context.Context, cfg *config.Config, conns *Connections) (*Application, error) {
+	// repositories
 	userRepo := repository.NewUserRepository(conns.DB)
 	sellerRepo := repository.NewSellerProfileRepository(conns.DB)
 	followRepo := repository.NewFollowRepository(conns.DB)
@@ -46,9 +47,7 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	processedEventRepo := repository.NewProcessedEventRepository(conns.DB)
 
 	txManager := repository.NewTxManager(conns.DB)
-
 	cacheService := cache.NewRedisCache(conns.Redis)
-
 	publisher, err := messaging.NewKafkaProducer(
 		cfg.Kafka.Brokers(),
 		cfg.Kafka.Env,
@@ -61,6 +60,7 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 
 	eventsTopic := pkgkafka.GetTopicWithEnv(cfg.Kafka.Env, pkgkafka.TopicUserEvents)
 
+	// services
 	userService := service.NewUserService(userRepo, cacheService, txManager, outboxRepo, eventsTopic)
 	followService := service.NewFollowService(followRepo, cacheService, txManager, outboxRepo, eventsTopic)
 	reviewService := service.NewReviewService(reviewRepo, userRepo, sellerRepo, cacheService, txManager, outboxRepo, eventsTopic)
@@ -80,12 +80,12 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 		publisher.Close()
 		return nil, fmt.Errorf("create kafka consumer: %w", err)
 	}
-
 	authMiddleware, authErr := middleware.NewAuthMiddleware(cfg.Keycloak.JWKSURL, userService)
 	if authErr != nil {
 		logger.Warn(ctx, "auth middleware init warning", logging.String("error", authErr.Error()))
 	}
 
+	// handlers
 	userHandler := handler.NewUserHandler(userService)
 	followHandler := handler.NewFollowHandler(followService)
 	reviewHandler := handler.NewReviewHandler(reviewService)
@@ -93,6 +93,8 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	sellerHandler := handler.NewSellerHandler(sellerService, kycService)
 	adminHandler := handler.NewAdminHandler(userService, kycService)
 
+
+	// global middleware
 	if cfg.Observability.LogLevel != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -141,7 +143,7 @@ func registerRoutes(
 ) {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	v1 := router.Group("/api/v1")
+	v1 := router.Group("/v1/user-services")
 
 	// Public
 	v1.GET("/users/search", userHandler.SearchUsers)

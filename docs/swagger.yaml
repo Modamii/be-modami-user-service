@@ -1,5 +1,61 @@
-basePath: /api/v1
+basePath: /v1/user-services
 definitions:
+  apperror.Code:
+    enum:
+    - BAD_REQUEST
+    - UNAUTHORIZED
+    - FORBIDDEN
+    - NOT_FOUND
+    - METHOD_NOT_ALLOWED
+    - NOT_ACCEPTABLE
+    - REQUEST_TIMEOUT
+    - CONFLICT
+    - GONE
+    - PRECONDITION_FAILED
+    - PAYLOAD_TOO_LARGE
+    - UNSUPPORTED_MEDIA_TYPE
+    - VALIDATION_ERROR
+    - UNPROCESSABLE_ENTITY
+    - LOCKED
+    - FAILED_DEPENDENCY
+    - PRECONDITION_REQUIRED
+    - TOO_MANY_REQUESTS
+    - INTERNAL_ERROR
+    - NOT_IMPLEMENTED
+    - BAD_GATEWAY
+    - SERVICE_UNAVAILABLE
+    - TIMEOUT
+    - CACHE_MISS
+    - CACHE_ERROR
+    - MESSAGE_BUS_ERROR
+    type: string
+    x-enum-varnames:
+    - CodeBadRequest
+    - CodeUnauthorized
+    - CodeForbidden
+    - CodeNotFound
+    - CodeMethodNotAllowed
+    - CodeNotAcceptable
+    - CodeRequestTimeout
+    - CodeConflict
+    - CodeGone
+    - CodePrecondFailed
+    - CodePayloadTooLarge
+    - CodeUnsupportedMedia
+    - CodeValidation
+    - CodeUnprocessable
+    - CodeLocked
+    - CodeFailedDependency
+    - CodePrecondRequired
+    - CodeTooManyRequest
+    - CodeInternal
+    - CodeNotImplemented
+    - CodeBadGateway
+    - CodeServiceUnavail
+    - CodeTimeout
+    - CodeCacheMiss
+    - CodeCacheError
+    - CodeMessageBus
   github_com_modami_user-service_internal_dto.AddressResponse:
     properties:
       address_line_1:
@@ -393,33 +449,59 @@ definitions:
       trust_score:
         type: number
     type: object
-  internal_adapter_handler.AddressListResponse:
+  response.ErrorBody:
     properties:
-      addresses:
-        items:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.AddressResponse'
-        type: array
-    type: object
-  internal_adapter_handler.ErrorResponse:
-    properties:
-      error:
-        example: error message
+      code:
+        $ref: '#/definitions/apperror.Code'
+      detail:
         type: string
-    type: object
-  internal_adapter_handler.MessageResponse:
-    properties:
+      errors:
+        items:
+          $ref: '#/definitions/response.FieldError'
+        type: array
       message:
-        example: operation successful
         type: string
     type: object
-  internal_adapter_handler.SearchUsersResponse:
+  response.FieldError:
     properties:
-      cursor:
+      field:
         type: string
-      users:
-        items:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse'
-        type: array
+      message:
+        type: string
+    type: object
+  response.Meta:
+    properties:
+      pagination:
+        $ref: '#/definitions/response.Pagination'
+      request_id:
+        type: string
+      timestamp:
+        type: integer
+    type: object
+  response.Pagination:
+    properties:
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.Response:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/response.ErrorBody'
+      meta:
+        $ref: '#/definitions/response.Meta'
+      success:
+        type: boolean
     type: object
 host: localhost:8086
 info:
@@ -451,15 +533,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.SearchUsersResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: List users
@@ -480,19 +562,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Approve KYC
@@ -521,19 +603,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Reject KYC
@@ -562,23 +644,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Update user status
@@ -603,11 +685,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: Get user profile
       tags:
       - Users
@@ -626,15 +708,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Unfollow a user
@@ -654,19 +736,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Follow a user
@@ -691,11 +773,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Check follow status
@@ -729,7 +811,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: Get followers
       tags:
       - Follows
@@ -761,7 +843,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: Get following
       tags:
       - Follows
@@ -793,7 +875,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: List reviews
       tags:
       - Reviews
@@ -823,15 +905,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Create a review
@@ -856,7 +938,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: Get rating summary
       tags:
       - Reviews
@@ -879,11 +961,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: Get shop profile
       tags:
       - Sellers
@@ -896,11 +978,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Deactivate account
@@ -918,11 +1000,11 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Get my profile
@@ -949,11 +1031,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Update my profile
@@ -968,11 +1050,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.AddressListResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: List addresses
@@ -999,15 +1081,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "422":
           description: Address limit reached
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Add address
@@ -1028,19 +1110,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Delete address
@@ -1072,15 +1154,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Update address
@@ -1101,19 +1183,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Set default address
@@ -1137,15 +1219,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Update avatar
@@ -1169,15 +1251,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Update cover image
@@ -1201,15 +1283,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.MessageResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Submit KYC documents
@@ -1228,11 +1310,11 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Get KYC status
@@ -1260,15 +1342,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Update seller profile
@@ -1296,15 +1378,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "409":
           description: Already a seller
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Register as seller
@@ -1334,11 +1416,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_adapter_handler.SearchUsersResponse'
+            $ref: '#/definitions/response.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_adapter_handler.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: Search users
       tags:
       - Users
