@@ -45,6 +45,11 @@ func main() {
 	ctx := context.Background()
 	defer logger.Shutdown(ctx)
 
+	if err := runMigrations(ctx, cfg.Postgres.WriterDSN()); err != nil {
+		logger.Error(ctx, "failed to run migrations", err)
+		os.Exit(1)
+	}
+
 	conns, err := newConnections(ctx, cfg)
 	if err != nil {
 		logger.Error(ctx, "failed to establish connections", err)
