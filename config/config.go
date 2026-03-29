@@ -47,6 +47,19 @@ func (p PostgresConfig) WriterDSN() string {
 		p.UserWriter, p.PasswordWriter, p.Host, p.Port, p.Database, p.SSLMode, p.Schema)
 }
 
+// MigrationDSN returns a DSN compatible with lib/pq (used by golang-migrate).
+// It normalizes sslmode to values accepted by lib/pq and omits search_path so
+// the migrations table is created in the public schema.
+func (p PostgresConfig) MigrationDSN() string {
+	sslmode := p.SSLMode
+	switch sslmode {
+	case "", "required", "prefer", "allow":
+		sslmode = "disable"
+	}
+	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		p.UserWriter, p.PasswordWriter, p.Host, p.Port, p.Database, sslmode)
+}
+
 func (p PostgresConfig) ReaderDSN() string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&search_path=%s",
 		p.UserReader, p.PasswordReader, p.Host, p.Port, p.Database, p.SSLMode, p.Schema)

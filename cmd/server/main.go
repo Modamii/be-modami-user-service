@@ -45,7 +45,12 @@ func main() {
 	ctx := context.Background()
 	defer logger.Shutdown(ctx)
 
-	if err := runMigrations(ctx, cfg.Postgres.WriterDSN()); err != nil {
+	if err := ensureDatabase(ctx, cfg.Postgres); err != nil {
+		logger.Error(ctx, "failed to ensure database", err)
+		os.Exit(1)
+	}
+
+	if err := runMigrations(ctx, cfg.Postgres.MigrationDSN()); err != nil {
 		logger.Error(ctx, "failed to run migrations", err)
 		os.Exit(1)
 	}

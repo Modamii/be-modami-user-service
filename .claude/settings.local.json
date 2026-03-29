@@ -26,7 +26,10 @@
       "Bash(docker ps:*)",
       "Bash(docker exec:*)",
       "Bash(make migrate-up:*)",
-      "Bash(make migrate-create:*)"
+      "Bash(make migrate-create:*)",
+      "Bash(ls:*)",
+      "Bash(printenv:*)",
+      "Bash(go run:*)"
     ]
   }
 }
