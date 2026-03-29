@@ -267,6 +267,13 @@ func (k *KafkaService) StartConsumer(ctx context.Context, handlers []ConsumerHan
 				logger.Info(ctx, "consumer context cancelled")
 				return nil
 			}
+			if strings.Contains(err.Error(), "UNKNOWN_TOPIC_ID") {
+				logger.Warn(ctx, "unknown topic ID detected, refreshing metadata and re-subscribing")
+				k.client.ForceMetadataRefresh()
+				k.client.AddConsumeTopics(topics...)
+				time.Sleep(2 * time.Second)
+				continue
+			}
 			logger.Error(ctx, "consumer poll error", err)
 			time.Sleep(time.Second)
 			continue
