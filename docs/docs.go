@@ -2042,6 +2042,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "date_of_birth": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },

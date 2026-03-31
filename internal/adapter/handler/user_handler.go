@@ -247,7 +247,7 @@ func (h *UserHandler) SearchUsers(c *gin.Context) {
 }
 
 func toUserProfileResponse(u *domain.User) dto.UserProfileResponse {
-	return dto.UserProfileResponse{
+	resp := dto.UserProfileResponse{
 		ID:             u.ID.String(),
 		Email:          u.Email,
 		FullName:       u.FullName,
@@ -264,6 +264,11 @@ func toUserProfileResponse(u *domain.User) dto.UserProfileResponse {
 		EmailVerified:  u.EmailVerified,
 		CreatedAt:      u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
+	if u.DateOfBirth != nil {
+		s := u.DateOfBirth.Format("2006-01-02")
+		resp.DateOfBirth = &s
+	}
+	return resp
 }
 
 func handleError(c *gin.Context, err error) {

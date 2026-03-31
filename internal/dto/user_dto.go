@@ -25,6 +25,7 @@ type UserProfileResponse struct {
 	CoverURL       string  `json:"cover_url,omitempty"`
 	Bio            string  `json:"bio,omitempty"`
 	Gender         string  `json:"gender"`
+	DateOfBirth    *string `json:"date_of_birth,omitempty"`
 	Role           string  `json:"role"`
 	Status         string  `json:"status"`
 	TrustScore     float64 `json:"trust_score"`
