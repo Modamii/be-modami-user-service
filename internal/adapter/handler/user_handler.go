@@ -4,13 +4,13 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/modami/user-service/internal/adapter/handler/middleware"
 	"github.com/modami/user-service/internal/domain"
 	"github.com/modami/user-service/internal/dto"
 	"github.com/modami/user-service/internal/service"
-	"gitlab.com/lifegoeson-libs/pkg-gokit/apperror"
 	"github.com/modami/user-service/pkg/validator"
-	"github.com/google/uuid"
+	"gitlab.com/lifegoeson-libs/pkg-gokit/apperror"
 	"gitlab.com/lifegoeson-libs/pkg-gokit/response"
 )
 
@@ -35,7 +35,7 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 func (h *UserHandler) GetMyProfile(c *gin.Context) {
 	keycloakID, ok := middleware.GetKeycloakID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
@@ -62,7 +62,7 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid user id")
+		response.BadRequest(c.Writer, "ID người dùng không hợp lệ")
 		return
 	}
 
@@ -88,9 +88,9 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me [put]
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
@@ -126,9 +126,9 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me/avatar [put]
 func (h *UserHandler) UpdateAvatar(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
@@ -143,7 +143,7 @@ func (h *UserHandler) UpdateAvatar(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "avatar updated"})
+	response.OK(c.Writer, gin.H{"message": "cập nhật ảnh đại diện thành công"})
 }
 
 // UpdateCover godoc
@@ -159,9 +159,9 @@ func (h *UserHandler) UpdateAvatar(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me/cover [put]
 func (h *UserHandler) UpdateCover(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
@@ -176,7 +176,7 @@ func (h *UserHandler) UpdateCover(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "cover updated"})
+	response.OK(c.Writer, gin.H{"message": "cập nhật ảnh bìa thành công"})
 }
 
 // DeactivateAccount godoc
@@ -189,9 +189,9 @@ func (h *UserHandler) UpdateCover(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me [delete]
 func (h *UserHandler) DeactivateAccount(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
@@ -200,7 +200,7 @@ func (h *UserHandler) DeactivateAccount(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "account deactivated"})
+	response.OK(c.Writer, gin.H{"message": "tài khoản đã được vô hiệu hóa"})
 }
 
 // SearchUsers godoc
@@ -217,7 +217,7 @@ func (h *UserHandler) DeactivateAccount(c *gin.Context) {
 func (h *UserHandler) SearchUsers(c *gin.Context) {
 	query := c.Query("q")
 	if query == "" {
-		response.BadRequest(c.Writer, "query parameter 'q' is required")
+		response.BadRequest(c.Writer, "tham số tìm kiếm 'q' là bắt buộc")
 		return
 	}
 
@@ -250,6 +250,7 @@ func toUserProfileResponse(u *domain.User) dto.UserProfileResponse {
 	resp := dto.UserProfileResponse{
 		ID:             u.ID.String(),
 		Email:          u.Email,
+		UserName:       u.UserName,
 		FullName:       u.FullName,
 		Phone:          u.Phone,
 		AvatarURL:      u.AvatarURL,
@@ -276,5 +277,5 @@ func handleError(c *gin.Context, err error) {
 		response.Err(c.Writer, ae)
 		return
 	}
-	response.InternalError(c.Writer, "internal server error")
+	response.InternalError(c.Writer, "lỗi máy chủ nội bộ")
 }

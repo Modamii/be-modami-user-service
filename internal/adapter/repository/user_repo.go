@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/modami/user-service/internal/domain"
 	apperror "github.com/modami/user-service/internal/apperror"
+	"github.com/modami/user-service/internal/domain"
 )
 
 type userRepo struct {
@@ -26,7 +26,7 @@ func (r *userRepo) Create(ctx context.Context, user *domain.User) error {
 			date_of_birth, role, status, email_verified, trust_score, follower_count, following_count, created_at, updated_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`
 	_, err := dbFromCtx(ctx, r.db).Exec(ctx, query,
-		user.ID, user.KeycloakID, user.Email, user.Username, user.FullName, user.Phone,
+		user.ID, user.KeycloakID, user.Email, user.UserName, user.FullName, user.Phone,
 		user.AvatarURL, user.CoverURL, user.Bio, user.Gender,
 		user.DateOfBirth, user.Role, user.Status, user.EmailVerified,
 		user.TrustScore, user.FollowerCount, user.FollowingCount,
@@ -65,7 +65,7 @@ func (r *userRepo) GetByEmail(ctx context.Context, email string) (*domain.User, 
 func (r *userRepo) scanUser(row pgx.Row) (*domain.User, error) {
 	u := &domain.User{}
 	err := row.Scan(
-		&u.ID, &u.KeycloakID, &u.Email, &u.Username, &u.FullName, &u.Phone,
+		&u.ID, &u.KeycloakID, &u.Email, &u.UserName, &u.FullName, &u.Phone,
 		&u.AvatarURL, &u.CoverURL, &u.Bio, &u.Gender,
 		&u.DateOfBirth, &u.Role, &u.Status, &u.EmailVerified,
 		&u.TrustScore, &u.FollowerCount, &u.FollowingCount,
@@ -149,7 +149,7 @@ func (r *userRepo) scanUsers(rows pgx.Rows) ([]*domain.User, error) {
 	for rows.Next() {
 		u := &domain.User{}
 		err := rows.Scan(
-			&u.ID, &u.KeycloakID, &u.Email, &u.Username, &u.FullName, &u.Phone,
+			&u.ID, &u.KeycloakID, &u.Email, &u.UserName, &u.FullName, &u.Phone,
 			&u.AvatarURL, &u.CoverURL, &u.Bio, &u.Gender,
 			&u.DateOfBirth, &u.Role, &u.Status, &u.EmailVerified,
 			&u.TrustScore, &u.FollowerCount, &u.FollowingCount,

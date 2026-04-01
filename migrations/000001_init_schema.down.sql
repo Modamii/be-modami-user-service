@@ -16,3 +16,6 @@ DROP TYPE IF EXISTS kyc_status;
 DROP TYPE IF EXISTS gender_type;
 DROP TYPE IF EXISTS user_status;
 DROP TYPE IF EXISTS user_role;
+
+DROP EXTENSION IF EXISTS pg_trgm;
+DROP EXTENSION IF EXISTS "uuid-ossp";

@@ -33,9 +33,9 @@ func NewAddressHandler(addressService *service.AddressService) *AddressHandler {
 // @Security     BearerAuth
 // @Router       /users/me/addresses [post]
 func (h *AddressHandler) AddAddress(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
@@ -68,9 +68,9 @@ func (h *AddressHandler) AddAddress(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me/addresses [get]
 func (h *AddressHandler) ListAddresses(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
@@ -103,16 +103,16 @@ func (h *AddressHandler) ListAddresses(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me/addresses/{addr_id} [put]
 func (h *AddressHandler) UpdateAddress(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
 	addrIDStr := c.Param("addr_id")
 	addrID, err := uuid.Parse(addrIDStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid address id")
+		response.BadRequest(c.Writer, "ID địa chỉ không hợp lệ")
 		return
 	}
 
@@ -148,16 +148,16 @@ func (h *AddressHandler) UpdateAddress(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me/addresses/{addr_id} [delete]
 func (h *AddressHandler) DeleteAddress(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
 	addrIDStr := c.Param("addr_id")
 	addrID, err := uuid.Parse(addrIDStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid address id")
+		response.BadRequest(c.Writer, "ID địa chỉ không hợp lệ")
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *AddressHandler) DeleteAddress(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "address deleted"})
+	response.OK(c.Writer, gin.H{"message": "xóa địa chỉ thành công"})
 }
 
 // SetDefault godoc
@@ -182,16 +182,16 @@ func (h *AddressHandler) DeleteAddress(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me/addresses/{addr_id}/default [put]
 func (h *AddressHandler) SetDefault(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
 	addrIDStr := c.Param("addr_id")
 	addrID, err := uuid.Parse(addrIDStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid address id")
+		response.BadRequest(c.Writer, "ID địa chỉ không hợp lệ")
 		return
 	}
 
@@ -200,7 +200,7 @@ func (h *AddressHandler) SetDefault(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "default address updated"})
+	response.OK(c.Writer, gin.H{"message": "cập nhật địa chỉ mặc định thành công"})
 }
 
 func toAddressResponse(a *domain.Address) dto.AddressResponse {

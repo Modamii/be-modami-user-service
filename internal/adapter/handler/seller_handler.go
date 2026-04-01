@@ -37,9 +37,9 @@ func NewSellerHandler(sellerService *service.SellerService, kycService *service.
 // @Security     BearerAuth
 // @Router       /users/me/seller/register [post]
 func (h *SellerHandler) Register(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
@@ -76,9 +76,9 @@ func (h *SellerHandler) Register(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me/seller/profile [put]
 func (h *SellerHandler) UpdateProfile(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
@@ -115,7 +115,7 @@ func (h *SellerHandler) GetShopProfile(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid user id")
+		response.BadRequest(c.Writer, "ID người dùng không hợp lệ")
 		return
 	}
 
@@ -141,9 +141,9 @@ func (h *SellerHandler) GetShopProfile(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me/seller/kyc [post]
 func (h *SellerHandler) SubmitKYC(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *SellerHandler) SubmitKYC(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "KYC documents submitted"})
+	response.OK(c.Writer, gin.H{"message": "gửi hồ sơ KYC thành công"})
 }
 
 // GetKYCStatus godoc
@@ -176,9 +176,9 @@ func (h *SellerHandler) SubmitKYC(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/me/seller/kyc/status [get]
 func (h *SellerHandler) GetKYCStatus(c *gin.Context) {
-	userID, ok := middleware.GetUserID(c)
+	userID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 

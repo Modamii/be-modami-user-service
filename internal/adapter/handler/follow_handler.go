@@ -32,16 +32,16 @@ func NewFollowHandler(followService *service.FollowService) *FollowHandler {
 // @Security     BearerAuth
 // @Router       /users/{id}/follow [post]
 func (h *FollowHandler) Follow(c *gin.Context) {
-	followerID, ok := middleware.GetUserID(c)
+	followerID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
 	followingIDStr := c.Param("id")
 	followingID, err := uuid.Parse(followingIDStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid user id")
+		response.BadRequest(c.Writer, "ID người dùng không hợp lệ")
 		return
 	}
 
@@ -50,7 +50,7 @@ func (h *FollowHandler) Follow(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "followed successfully"})
+	response.OK(c.Writer, gin.H{"message": "theo dõi thành công"})
 }
 
 // Unfollow godoc
@@ -65,16 +65,16 @@ func (h *FollowHandler) Follow(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/{id}/follow [delete]
 func (h *FollowHandler) Unfollow(c *gin.Context) {
-	followerID, ok := middleware.GetUserID(c)
+	followerID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
 	followingIDStr := c.Param("id")
 	followingID, err := uuid.Parse(followingIDStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid user id")
+		response.BadRequest(c.Writer, "ID người dùng không hợp lệ")
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *FollowHandler) Unfollow(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "unfollowed successfully"})
+	response.OK(c.Writer, gin.H{"message": "hủy theo dõi thành công"})
 }
 
 // GetFollowers godoc
@@ -101,7 +101,7 @@ func (h *FollowHandler) GetFollowers(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid user id")
+		response.BadRequest(c.Writer, "ID người dùng không hợp lệ")
 		return
 	}
 
@@ -150,7 +150,7 @@ func (h *FollowHandler) GetFollowing(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid user id")
+		response.BadRequest(c.Writer, "ID người dùng không hợp lệ")
 		return
 	}
 
@@ -196,16 +196,16 @@ func (h *FollowHandler) GetFollowing(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /users/{id}/follow/status [get]
 func (h *FollowHandler) CheckFollowStatus(c *gin.Context) {
-	followerID, ok := middleware.GetUserID(c)
+	followerID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
 	followingIDStr := c.Param("id")
 	followingID, err := uuid.Parse(followingIDStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid user id")
+		response.BadRequest(c.Writer, "ID người dùng không hợp lệ")
 		return
 	}
 

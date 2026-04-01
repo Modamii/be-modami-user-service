@@ -3,7 +3,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Enums
-CREATE TYPE user_role AS ENUM ('buyer', 'seller');
+CREATE TYPE user_role AS ENUM ('buyer', 'seller', 'admin');
 CREATE TYPE user_status AS ENUM ('active', 'inactive', 'suspended', 'banned');
 CREATE TYPE gender_type AS ENUM ('male', 'female', 'other', 'undisclosed');
 CREATE TYPE kyc_status AS ENUM ('none', 'pending', 'approved', 'rejected');

@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	apperror "github.com/modami/user-service/internal/apperror"
 	"github.com/modami/user-service/internal/domain"
 	"github.com/modami/user-service/internal/dto"
 	"github.com/modami/user-service/internal/port"
-	apperror "github.com/modami/user-service/internal/apperror"
 	"github.com/modami/user-service/pkg/pagination"
 )
 
@@ -214,7 +214,7 @@ func (s *UserService) CreateFromEvent(ctx context.Context, event *domain.AuthUse
 		ID:            uuid.New(),
 		KeycloakID:    event.UserID,
 		Email:         event.Email,
-		Username:      event.Username,
+		UserName:      event.Username,
 		FullName:      strings.TrimSpace(event.FirstName + " " + event.LastName),
 		Role:          domain.UserRoleBuyer,
 		Status:        domain.UserStatusActive,

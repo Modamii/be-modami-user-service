@@ -18,6 +18,7 @@ type ReviewRole string
 const (
 	UserRoleBuyer  UserRole = "buyer"
 	UserRoleSeller UserRole = "seller"
+	UserRoleAdmin  UserRole = "admin"
 )
 
 const (
@@ -68,7 +69,7 @@ type User struct {
 	ID             uuid.UUID  `json:"id"`
 	KeycloakID     string     `json:"keycloak_id"`
 	Email          string     `json:"email"`
-	Username       string     `json:"username"`
+	UserName       string     `json:"username"`
 	FullName       string     `json:"full_name"`
 	Phone          string     `json:"phone"`
 	AvatarURL      string     `json:"avatar_url"`

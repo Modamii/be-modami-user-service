@@ -44,7 +44,7 @@ func (h *AdminHandler) UpdateUserStatus(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid user id")
+		response.BadRequest(c.Writer, "ID người dùng không hợp lệ")
 		return
 	}
 
@@ -63,7 +63,7 @@ func (h *AdminHandler) UpdateUserStatus(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "status updated"})
+	response.OK(c.Writer, gin.H{"message": "cập nhật trạng thái thành công"})
 }
 
 // ApproveKYC godoc
@@ -79,16 +79,16 @@ func (h *AdminHandler) UpdateUserStatus(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /admin/users/{id}/kyc/approve [put]
 func (h *AdminHandler) ApproveKYC(c *gin.Context) {
-	adminID, ok := middleware.GetUserID(c)
+	adminID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid user id")
+		response.BadRequest(c.Writer, "ID người dùng không hợp lệ")
 		return
 	}
 
@@ -97,7 +97,7 @@ func (h *AdminHandler) ApproveKYC(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "KYC approved"})
+	response.OK(c.Writer, gin.H{"message": "duyệt KYC thành công"})
 }
 
 // RejectKYC godoc
@@ -115,16 +115,16 @@ func (h *AdminHandler) ApproveKYC(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /admin/users/{id}/kyc/reject [put]
 func (h *AdminHandler) RejectKYC(c *gin.Context) {
-	adminID, ok := middleware.GetUserID(c)
+	adminID, ok := middleware.UserID(c)
 	if !ok {
-		response.Unauthorized(c.Writer, "unauthorized")
+		response.Unauthorized(c.Writer, "chưa xác thực")
 		return
 	}
 
 	idStr := c.Param("id")
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.BadRequest(c.Writer, "invalid user id")
+		response.BadRequest(c.Writer, "ID người dùng không hợp lệ")
 		return
 	}
 
@@ -143,7 +143,7 @@ func (h *AdminHandler) RejectKYC(c *gin.Context) {
 		return
 	}
 
-	response.OK(c.Writer, gin.H{"message": "KYC rejected"})
+	response.OK(c.Writer, gin.H{"message": "từ chối KYC thành công"})
 }
 
 // ListUsers godoc
