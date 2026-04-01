@@ -3,7 +3,7 @@ package main
 // @title           Modami User Service API
 // @version         1.0
 // @description     User service for the Modami marketplace platform.
-// @host            localhost:8086
+// @host            modami-user.techinsightsworld.com
 // @BasePath        /v1/user-services
 // @securityDefinitions.apikey BearerAuth
 // @in header

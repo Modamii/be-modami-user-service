@@ -450,6 +450,8 @@ definitions:
         type: string
       trust_score:
         type: number
+      username:
+        type: string
     type: object
   response.ErrorBody:
     properties:
@@ -505,7 +507,7 @@ definitions:
       success:
         type: boolean
     type: object
-host: localhost:8086
+host: modami-user.techinsightsworld.com
 info:
   contact: {}
   description: User service for the Modami marketplace platform.
