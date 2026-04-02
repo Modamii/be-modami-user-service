@@ -157,7 +157,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.RejectKYCRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.RejectKYCRequest"
                         }
                     }
                 ],
@@ -221,7 +221,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.UpdateStatusRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.UpdateStatusRequest"
                         }
                     }
                 ],
@@ -278,7 +278,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.UserProfileResponse"
                         }
                     },
                     "401": {
@@ -319,7 +319,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.UpdateProfileRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.UpdateProfileRequest"
                         }
                     }
                 ],
@@ -327,7 +327,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.UserProfileResponse"
                         }
                     },
                     "400": {
@@ -428,7 +428,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.CreateAddressRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.CreateAddressRequest"
                         }
                     }
                 ],
@@ -436,7 +436,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.AddressResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.AddressResponse"
                         }
                     },
                     "400": {
@@ -492,7 +492,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.UpdateAddressRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.UpdateAddressRequest"
                         }
                     }
                 ],
@@ -500,7 +500,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.AddressResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.AddressResponse"
                         }
                     },
                     "400": {
@@ -651,7 +651,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.UpdateAvatarRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.UpdateAvatarRequest"
                         }
                     }
                 ],
@@ -702,7 +702,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.UpdateCoverRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.UpdateCoverRequest"
                         }
                     }
                 ],
@@ -753,7 +753,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.SubmitKYCRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.SubmitKYCRequest"
                         }
                     }
                 ],
@@ -798,7 +798,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.KYCStatusResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.KYCStatusResponse"
                         }
                     },
                     "401": {
@@ -841,7 +841,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.UpdateSellerProfileRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.UpdateSellerProfileRequest"
                         }
                     }
                 ],
@@ -849,7 +849,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.SellerProfileResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.SellerProfileResponse"
                         }
                     },
                     "400": {
@@ -898,7 +898,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.RegisterSellerRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.RegisterSellerRequest"
                         }
                     }
                 ],
@@ -906,7 +906,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.SellerProfileResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.SellerProfileResponse"
                         }
                     },
                     "400": {
@@ -1001,7 +1001,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.UserProfileResponse"
                         }
                     },
                     "400": {
@@ -1143,7 +1143,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.FollowStatusResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.FollowStatusResponse"
                         }
                     },
                     "400": {
@@ -1197,7 +1197,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.FollowListResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.FollowListResponse"
                         }
                     },
                     "400": {
@@ -1245,7 +1245,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.FollowListResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.FollowListResponse"
                         }
                     },
                     "400": {
@@ -1293,7 +1293,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.ReviewListResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.ReviewListResponse"
                         }
                     },
                     "400": {
@@ -1335,7 +1335,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.CreateReviewRequest"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.CreateReviewRequest"
                         }
                     }
                 ],
@@ -1343,7 +1343,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.ReviewResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.ReviewResponse"
                         }
                     },
                     "400": {
@@ -1390,7 +1390,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.RatingSummaryResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.RatingSummaryResponse"
                         }
                     },
                     "400": {
@@ -1425,7 +1425,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_modami_user-service_internal_dto.SellerProfileResponse"
+                            "$ref": "#/definitions/be-modami-user-service_internal_dto.SellerProfileResponse"
                         }
                     },
                     "400": {
@@ -1504,7 +1504,7 @@ const docTemplate = `{
                 "CodeMessageBus"
             ]
         },
-        "github_com_modami_user-service_internal_dto.AddressResponse": {
+        "be-modami-user-service_internal_dto.AddressResponse": {
             "type": "object",
             "properties": {
                 "address_line_1": {
@@ -1548,7 +1548,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.CreateAddressRequest": {
+        "be-modami-user-service_internal_dto.CreateAddressRequest": {
             "type": "object",
             "required": [
                 "address_line_1",
@@ -1601,7 +1601,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.CreateReviewRequest": {
+        "be-modami-user-service_internal_dto.CreateReviewRequest": {
             "type": "object",
             "required": [
                 "order_id",
@@ -1625,7 +1625,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.FollowListResponse": {
+        "be-modami-user-service_internal_dto.FollowListResponse": {
             "type": "object",
             "properties": {
                 "cursor": {
@@ -1634,12 +1634,12 @@ const docTemplate = `{
                 "users": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_modami_user-service_internal_dto.FollowUserItem"
+                        "$ref": "#/definitions/be-modami-user-service_internal_dto.FollowUserItem"
                     }
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.FollowStatusResponse": {
+        "be-modami-user-service_internal_dto.FollowStatusResponse": {
             "type": "object",
             "properties": {
                 "is_following": {
@@ -1647,7 +1647,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.FollowUserItem": {
+        "be-modami-user-service_internal_dto.FollowUserItem": {
             "type": "object",
             "properties": {
                 "avatar_url": {
@@ -1664,7 +1664,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.KYCDocumentInput": {
+        "be-modami-user-service_internal_dto.KYCDocumentInput": {
             "type": "object",
             "required": [
                 "doc_type",
@@ -1685,7 +1685,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.KYCStatusResponse": {
+        "be-modami-user-service_internal_dto.KYCStatusResponse": {
             "type": "object",
             "properties": {
                 "status": {
@@ -1696,7 +1696,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.RatingSummaryResponse": {
+        "be-modami-user-service_internal_dto.RatingSummaryResponse": {
             "type": "object",
             "properties": {
                 "avg_rating": {
@@ -1725,7 +1725,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.RegisterSellerRequest": {
+        "be-modami-user-service_internal_dto.RegisterSellerRequest": {
             "type": "object",
             "required": [
                 "business_type",
@@ -1766,7 +1766,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.RejectKYCRequest": {
+        "be-modami-user-service_internal_dto.RejectKYCRequest": {
             "type": "object",
             "required": [
                 "reason"
@@ -1779,7 +1779,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.ReviewListResponse": {
+        "be-modami-user-service_internal_dto.ReviewListResponse": {
             "type": "object",
             "properties": {
                 "cursor": {
@@ -1788,12 +1788,12 @@ const docTemplate = `{
                 "reviews": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_modami_user-service_internal_dto.ReviewResponse"
+                        "$ref": "#/definitions/be-modami-user-service_internal_dto.ReviewResponse"
                     }
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.ReviewResponse": {
+        "be-modami-user-service_internal_dto.ReviewResponse": {
             "type": "object",
             "properties": {
                 "comment": {
@@ -1825,7 +1825,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.SellerProfileResponse": {
+        "be-modami-user-service_internal_dto.SellerProfileResponse": {
             "type": "object",
             "properties": {
                 "avg_rating": {
@@ -1863,7 +1863,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.SubmitKYCRequest": {
+        "be-modami-user-service_internal_dto.SubmitKYCRequest": {
             "type": "object",
             "required": [
                 "documents"
@@ -1873,12 +1873,12 @@ const docTemplate = `{
                     "type": "array",
                     "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/github_com_modami_user-service_internal_dto.KYCDocumentInput"
+                        "$ref": "#/definitions/be-modami-user-service_internal_dto.KYCDocumentInput"
                     }
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.UpdateAddressRequest": {
+        "be-modami-user-service_internal_dto.UpdateAddressRequest": {
             "type": "object",
             "properties": {
                 "address_line_1": {
@@ -1925,7 +1925,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.UpdateAvatarRequest": {
+        "be-modami-user-service_internal_dto.UpdateAvatarRequest": {
             "type": "object",
             "required": [
                 "avatar_url"
@@ -1936,7 +1936,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.UpdateCoverRequest": {
+        "be-modami-user-service_internal_dto.UpdateCoverRequest": {
             "type": "object",
             "required": [
                 "cover_url"
@@ -1947,7 +1947,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.UpdateProfileRequest": {
+        "be-modami-user-service_internal_dto.UpdateProfileRequest": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -1976,7 +1976,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.UpdateSellerProfileRequest": {
+        "be-modami-user-service_internal_dto.UpdateSellerProfileRequest": {
             "type": "object",
             "properties": {
                 "bank_account": {
@@ -2006,7 +2006,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.UpdateStatusRequest": {
+        "be-modami-user-service_internal_dto.UpdateStatusRequest": {
             "type": "object",
             "required": [
                 "status"
@@ -2027,7 +2027,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_modami_user-service_internal_dto.UserProfileResponse": {
+        "be-modami-user-service_internal_dto.UserProfileResponse": {
             "type": "object",
             "properties": {
                 "avatar_url": {
@@ -2179,7 +2179,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "modami-user.techinsightsworld.com",
+	Host:             "localhost:8086",
 	BasePath:         "/v1/user-services",
 	Schemes:          []string{},
 	Title:            "Modami User Service API",

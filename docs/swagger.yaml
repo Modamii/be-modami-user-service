@@ -56,7 +56,7 @@ definitions:
     - CodeCacheMiss
     - CodeCacheError
     - CodeMessageBus
-  github_com_modami_user-service_internal_dto.AddressResponse:
+  be-modami-user-service_internal_dto.AddressResponse:
     properties:
       address_line_1:
         type: string
@@ -85,7 +85,7 @@ definitions:
       ward:
         type: string
     type: object
-  github_com_modami_user-service_internal_dto.CreateAddressRequest:
+  be-modami-user-service_internal_dto.CreateAddressRequest:
     properties:
       address_line_1:
         maxLength: 512
@@ -124,7 +124,7 @@ definitions:
     - phone
     - recipient_name
     type: object
-  github_com_modami_user-service_internal_dto.CreateReviewRequest:
+  be-modami-user-service_internal_dto.CreateReviewRequest:
     properties:
       comment:
         maxLength: 1000
@@ -141,21 +141,21 @@ definitions:
     - order_id
     - rating
     type: object
-  github_com_modami_user-service_internal_dto.FollowListResponse:
+  be-modami-user-service_internal_dto.FollowListResponse:
     properties:
       cursor:
         type: string
       users:
         items:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.FollowUserItem'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.FollowUserItem'
         type: array
     type: object
-  github_com_modami_user-service_internal_dto.FollowStatusResponse:
+  be-modami-user-service_internal_dto.FollowStatusResponse:
     properties:
       is_following:
         type: boolean
     type: object
-  github_com_modami_user-service_internal_dto.FollowUserItem:
+  be-modami-user-service_internal_dto.FollowUserItem:
     properties:
       avatar_url:
         type: string
@@ -166,7 +166,7 @@ definitions:
       id:
         type: string
     type: object
-  github_com_modami_user-service_internal_dto.KYCDocumentInput:
+  be-modami-user-service_internal_dto.KYCDocumentInput:
     properties:
       doc_type:
         enum:
@@ -181,14 +181,14 @@ definitions:
     - doc_type
     - doc_url
     type: object
-  github_com_modami_user-service_internal_dto.KYCStatusResponse:
+  be-modami-user-service_internal_dto.KYCStatusResponse:
     properties:
       status:
         type: string
       updated_at:
         type: string
     type: object
-  github_com_modami_user-service_internal_dto.RatingSummaryResponse:
+  be-modami-user-service_internal_dto.RatingSummaryResponse:
     properties:
       avg_rating:
         type: number
@@ -207,7 +207,7 @@ definitions:
       user_id:
         type: string
     type: object
-  github_com_modami_user-service_internal_dto.RegisterSellerRequest:
+  be-modami-user-service_internal_dto.RegisterSellerRequest:
     properties:
       bank_account:
         type: string
@@ -237,7 +237,7 @@ definitions:
     - shop_name
     - shop_slug
     type: object
-  github_com_modami_user-service_internal_dto.RejectKYCRequest:
+  be-modami-user-service_internal_dto.RejectKYCRequest:
     properties:
       reason:
         maxLength: 500
@@ -246,16 +246,16 @@ definitions:
     required:
     - reason
     type: object
-  github_com_modami_user-service_internal_dto.ReviewListResponse:
+  be-modami-user-service_internal_dto.ReviewListResponse:
     properties:
       cursor:
         type: string
       reviews:
         items:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.ReviewResponse'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.ReviewResponse'
         type: array
     type: object
-  github_com_modami_user-service_internal_dto.ReviewResponse:
+  be-modami-user-service_internal_dto.ReviewResponse:
     properties:
       comment:
         type: string
@@ -276,7 +276,7 @@ definitions:
       role:
         type: string
     type: object
-  github_com_modami_user-service_internal_dto.SellerProfileResponse:
+  be-modami-user-service_internal_dto.SellerProfileResponse:
     properties:
       avg_rating:
         type: number
@@ -301,17 +301,17 @@ definitions:
       user_id:
         type: string
     type: object
-  github_com_modami_user-service_internal_dto.SubmitKYCRequest:
+  be-modami-user-service_internal_dto.SubmitKYCRequest:
     properties:
       documents:
         items:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.KYCDocumentInput'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.KYCDocumentInput'
         minItems: 1
         type: array
     required:
     - documents
     type: object
-  github_com_modami_user-service_internal_dto.UpdateAddressRequest:
+  be-modami-user-service_internal_dto.UpdateAddressRequest:
     properties:
       address_line_1:
         maxLength: 512
@@ -345,21 +345,21 @@ definitions:
         maxLength: 128
         type: string
     type: object
-  github_com_modami_user-service_internal_dto.UpdateAvatarRequest:
+  be-modami-user-service_internal_dto.UpdateAvatarRequest:
     properties:
       avatar_url:
         type: string
     required:
     - avatar_url
     type: object
-  github_com_modami_user-service_internal_dto.UpdateCoverRequest:
+  be-modami-user-service_internal_dto.UpdateCoverRequest:
     properties:
       cover_url:
         type: string
     required:
     - cover_url
     type: object
-  github_com_modami_user-service_internal_dto.UpdateProfileRequest:
+  be-modami-user-service_internal_dto.UpdateProfileRequest:
     properties:
       bio:
         maxLength: 500
@@ -380,7 +380,7 @@ definitions:
       phone:
         type: string
     type: object
-  github_com_modami_user-service_internal_dto.UpdateSellerProfileRequest:
+  be-modami-user-service_internal_dto.UpdateSellerProfileRequest:
     properties:
       bank_account:
         type: string
@@ -401,7 +401,7 @@ definitions:
       tax_id:
         type: string
     type: object
-  github_com_modami_user-service_internal_dto.UpdateStatusRequest:
+  be-modami-user-service_internal_dto.UpdateStatusRequest:
     properties:
       reason:
         maxLength: 500
@@ -416,7 +416,7 @@ definitions:
     required:
     - status
     type: object
-  github_com_modami_user-service_internal_dto.UserProfileResponse:
+  be-modami-user-service_internal_dto.UserProfileResponse:
     properties:
       avatar_url:
         type: string
@@ -507,7 +507,7 @@ definitions:
       success:
         type: boolean
     type: object
-host: modami-user.techinsightsworld.com
+host: localhost:8086
 info:
   contact: {}
   description: User service for the Modami marketplace platform.
@@ -600,7 +600,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.RejectKYCRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.RejectKYCRequest'
       produces:
       - application/json
       responses:
@@ -641,7 +641,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateStatusRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.UpdateStatusRequest'
       produces:
       - application/json
       responses:
@@ -685,7 +685,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.UserProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -773,7 +773,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.FollowStatusResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.FollowStatusResponse'
         "400":
           description: Bad Request
           schema:
@@ -811,7 +811,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.FollowListResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.FollowListResponse'
         "400":
           description: Bad Request
           schema:
@@ -843,7 +843,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.FollowListResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.FollowListResponse'
         "400":
           description: Bad Request
           schema:
@@ -875,7 +875,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.ReviewListResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.ReviewListResponse'
         "400":
           description: Bad Request
           schema:
@@ -898,14 +898,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.CreateReviewRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.CreateReviewRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.ReviewResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.ReviewResponse'
         "400":
           description: Bad Request
           schema:
@@ -938,7 +938,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.RatingSummaryResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.RatingSummaryResponse'
         "400":
           description: Bad Request
           schema:
@@ -961,7 +961,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.SellerProfileResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.SellerProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -1000,7 +1000,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.UserProfileResponse'
         "401":
           description: Unauthorized
           schema:
@@ -1024,14 +1024,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateProfileRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.UpdateProfileRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.UserProfileResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.UserProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -1074,14 +1074,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.CreateAddressRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.CreateAddressRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.AddressResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.AddressResponse'
         "400":
           description: Bad Request
           schema:
@@ -1147,14 +1147,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateAddressRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.UpdateAddressRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.AddressResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.AddressResponse'
         "400":
           description: Bad Request
           schema:
@@ -1216,7 +1216,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateAvatarRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.UpdateAvatarRequest'
       produces:
       - application/json
       responses:
@@ -1248,7 +1248,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateCoverRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.UpdateCoverRequest'
       produces:
       - application/json
       responses:
@@ -1280,7 +1280,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.SubmitKYCRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.SubmitKYCRequest'
       produces:
       - application/json
       responses:
@@ -1310,7 +1310,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.KYCStatusResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.KYCStatusResponse'
         "401":
           description: Unauthorized
           schema:
@@ -1335,14 +1335,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.UpdateSellerProfileRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.UpdateSellerProfileRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.SellerProfileResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.SellerProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -1371,14 +1371,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_modami_user-service_internal_dto.RegisterSellerRequest'
+          $ref: '#/definitions/be-modami-user-service_internal_dto.RegisterSellerRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_modami_user-service_internal_dto.SellerProfileResponse'
+            $ref: '#/definitions/be-modami-user-service_internal_dto.SellerProfileResponse'
         "400":
           description: Bad Request
           schema:
