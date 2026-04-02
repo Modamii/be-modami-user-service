@@ -8,34 +8,23 @@
 
 ## Changelog
 
-| Version | Date       | Last Upload At      | Changes |
-|---------|------------|---------------------|---------|
-| v1.2.0  | 2026-03-29 | 2026-03-29 00:00 UTC | Migrate to `pkg-gokit` standard response envelope; remove local `pkg/apperror`; all responses wrapped in `{success, data, error, meta}`; embed DB migrations into binary (auto-run on startup); fix Kafka `UNKNOWN_TOPIC_ID` consumer recovery |
-| v1.1.0  | 2026-03-28 | 2026-03-28 00:00 UTC | Add Swagger docs; add `pkg-gokit` response/apperror integration; refactor handler error handling |
-| v1.0.0  | 2026-03-27 | 2026-03-27 00:00 UTC | Initial release: user, follow, review, address, seller, KYC, admin, gRPC endpoints |
+| Version | Date       | Changes |
+|---------|------------|---------|
+| v1.2.0  | 2026-04-02 | Unified API view (no admin/public split); add `username` and `date_of_birth` to profile response; migrate to `pkg-gokit` standard response envelope; embed DB migrations into binary (auto-run on startup); fix Kafka `UNKNOWN_TOPIC_ID` consumer recovery |
+| v1.1.0  | 2026-03-28 | Add Swagger docs; `pkg-gokit` response/apperror integration; refactor handler error handling |
+| v1.0.0  | 2026-03-27 | Initial release |
 
 ---
 
 ## Standard Response Envelope
 
-All REST API responses — success and error — are wrapped in the following envelope:
-
-```json
-{
-  "success": true,
-  "data": { },
-  "error": null,
-  "meta": {
-    "timestamp": 1711584000
-  }
-}
-```
+All REST API responses are wrapped in this envelope:
 
 ### Success
 ```json
 {
   "success": true,
-  "data": { ... },
+  "data": { },
   "meta": { "timestamp": 1711584000 }
 }
 ```
@@ -46,7 +35,7 @@ All REST API responses — success and error — are wrapped in the following en
   "success": false,
   "error": {
     "code": "NOT_FOUND",
-    "message": "not found",
+    "message": "không tìm thấy",
     "detail": ""
   },
   "meta": { "timestamp": 1711584000 }
@@ -60,7 +49,7 @@ All REST API responses — success and error — are wrapped in the following en
 | `BAD_REQUEST` | 400 | Invalid input or parameters |
 | `VALIDATION_ERROR` | 400 | Field-level validation failed |
 | `UNAUTHORIZED` | 401 | Missing or invalid token |
-| `FORBIDDEN` | 403 | Access denied |
+| `FORBIDDEN` | 403 | Access denied (e.g. not admin) |
 | `NOT_FOUND` | 404 | Resource not found |
 | `CONFLICT` | 409 | Resource already exists or state conflict |
 | `INTERNAL_ERROR` | 500 | Unexpected server error |
@@ -69,24 +58,27 @@ All REST API responses — success and error — are wrapped in the following en
 
 ## Authentication
 
-All protected endpoints require a JWT Bearer token in the `Authorization` header:
+| Icon | Meaning |
+|------|---------|
+| 🔒 | Requires `Authorization: Bearer <token>` |
+| 🔑 | Requires admin role in addition to token |
 
 ```
 Authorization: Bearer <token>
 ```
 
-The token is issued by Keycloak and validated via JWKS.
+Token is issued by Keycloak and validated via JWKS.
 
 ---
 
-## REST API Endpoints
+## API Endpoints
 
 ---
 
 ### Users
 
 #### `GET /users/search` — Search Users
-Public endpoint to search users by name or email.
+Search users by name or email. No auth required.
 
 **Query Parameters**
 
@@ -105,6 +97,7 @@ Public endpoint to search users by name or email.
       {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "email": "user@example.com",
+        "username": "nguyenvana",
         "full_name": "Nguyen Van A",
         "phone": "0901234567",
         "avatar_url": "https://...",
@@ -126,7 +119,7 @@ Public endpoint to search users by name or email.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -135,7 +128,7 @@ Public endpoint to search users by name or email.
 ---
 
 #### `GET /users/{id}` — Get Public Profile
-Returns a user's public profile.
+Returns a user's public profile. No auth required.
 
 **Path Parameters**
 
@@ -150,12 +143,14 @@ Returns a user's public profile.
   "data": {
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "email": "user@example.com",
+    "username": "nguyenvana",
     "full_name": "Nguyen Van A",
     "phone": "0901234567",
     "avatar_url": "https://...",
     "cover_url": "https://...",
     "bio": "Hello world",
     "gender": "male",
+    "date_of_birth": "1995-05-20",
     "role": "buyer",
     "status": "active",
     "trust_score": 4.5,
@@ -168,7 +163,9 @@ Returns a user's public profile.
 }
 ```
 
-**Error Responses**
+> `date_of_birth` is omitted when not set.
+
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -178,11 +175,9 @@ Returns a user's public profile.
 ---
 
 #### `GET /users/me` — Get My Profile 🔒
-Returns the authenticated user's own profile.
+Returns the authenticated user's own profile. Same response structure as `GET /users/{id}`.
 
-**Success Response** `200` — same as `GET /users/{id}`
-
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -191,10 +186,9 @@ Returns the authenticated user's own profile.
 
 ---
 
-#### `PUT /users/me` — Update Profile 🔒
-Updates the authenticated user's profile fields.
+#### `PUT /users/me` — Update My Profile 🔒
 
-**Request Body**
+**Request Body** — all fields optional:
 ```json
 {
   "full_name": "Nguyen Van B",
@@ -205,17 +199,17 @@ Updates the authenticated user's profile fields.
 }
 ```
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| `full_name` | string | No | min 1, max 255 |
-| `phone` | string | No | — |
-| `bio` | string | No | max 500 |
-| `gender` | string | No | `male` \| `female` \| `other` \| `undisclosed` |
-| `date_of_birth` | string | No | format `YYYY-MM-DD` |
+| Field | Type | Validation |
+|-------|------|------------|
+| `full_name` | string | min 1, max 255 |
+| `phone` | string | — |
+| `bio` | string | max 500 |
+| `gender` | string | `male` \| `female` \| `other` \| `undisclosed` |
+| `date_of_birth` | string | format `YYYY-MM-DD` |
 
-**Success Response** `200` — updated `UserProfileResponse` (same structure as GET /users/{id})
+**Success Response** `200` — updated `UserProfileResponse` (same as `GET /users/{id}`)
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -246,7 +240,7 @@ Updates the authenticated user's profile fields.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -277,7 +271,7 @@ Updates the authenticated user's profile fields.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -297,11 +291,85 @@ Updates the authenticated user's profile fields.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
 | `UNAUTHORIZED` 401 | Invalid or missing token |
+
+---
+
+#### `GET /admin/users` — List / Search All Users 🔒🔑
+Admin-only. List or search all users.
+
+**Query Parameters**
+
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `q` | string | No | Search keyword |
+| `limit` | int | No | Max results (1–100, default 20) |
+| `cursor` | string | No | Pagination cursor |
+
+**Success Response** `200`
+```json
+{
+  "success": true,
+  "data": {
+    "users": [ { "...": "UserProfileResponse" } ],
+    "cursor": "eyJpZCI6Ii4uLiJ9"
+  },
+  "meta": { "timestamp": 1711584000 }
+}
+```
+
+**Errors**
+
+| Code | Condition |
+|------|-----------|
+| `UNAUTHORIZED` 401 | Invalid or missing token |
+| `FORBIDDEN` 403 | Not admin |
+
+---
+
+#### `PUT /admin/users/{id}/status` — Update User Status 🔒🔑
+Admin-only. Change a user's account status.
+
+**Path Parameters**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | User ID |
+
+**Request Body**
+```json
+{
+  "status": "suspended",
+  "reason": "Violation of terms"
+}
+```
+
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `status` | string | Yes | `active` \| `inactive` \| `suspended` \| `banned` |
+| `reason` | string | No | max 500 |
+
+**Success Response** `200`
+```json
+{
+  "success": true,
+  "data": { "message": "status updated" },
+  "meta": { "timestamp": 1711584000 }
+}
+```
+
+**Errors**
+
+| Code | Condition |
+|------|-----------|
+| `BAD_REQUEST` 400 | Invalid UUID or validation failed |
+| `UNAUTHORIZED` 401 | Invalid or missing token |
+| `FORBIDDEN` 403 | Not admin |
+| `NOT_FOUND` 404 | User not found |
 
 ---
 
@@ -324,11 +392,11 @@ Updates the authenticated user's profile fields.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
-| `BAD_REQUEST` 400 | Invalid UUID or cannot follow yourself |
+| `BAD_REQUEST` 400 | Invalid UUID or trying to follow yourself |
 | `UNAUTHORIZED` 401 | Invalid or missing token |
 | `CONFLICT` 409 | Already following |
 
@@ -351,11 +419,11 @@ Updates the authenticated user's profile fields.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
-| `BAD_REQUEST` 400 | Invalid UUID or not following |
+| `BAD_REQUEST` 400 | Invalid UUID |
 | `UNAUTHORIZED` 401 | Invalid or missing token |
 
 ---
@@ -377,7 +445,7 @@ Updates the authenticated user's profile fields.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -420,7 +488,7 @@ Updates the authenticated user's profile fields.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -480,9 +548,9 @@ Same structure as `GET /users/{id}/followers`.
 }
 ```
 
-> Note: `reviewer_id` is omitted from the response when `is_anonymous` is `true`.
+> `reviewer_id` is omitted from the response when `is_anonymous` is `true`.
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -531,7 +599,7 @@ Same structure as `GET /users/{id}/followers`.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -565,7 +633,7 @@ Same structure as `GET /users/{id}/followers`.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -606,7 +674,7 @@ Same structure as `GET /users/{id}/followers`.
 | `province` | string | No | max 128 |
 | `postal_code` | string | No | max 20 |
 | `country` | string | No | max 64, default `Vietnam` |
-| `is_default` | bool | No | default false |
+| `is_default` | bool | No | default false (first address is always default) |
 
 **Success Response** `201`
 ```json
@@ -631,17 +699,16 @@ Same structure as `GET /users/{id}/followers`.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
-| `BAD_REQUEST` 400 | Validation failed |
+| `BAD_REQUEST` 400 | Validation failed or address limit reached (max 10) |
 | `UNAUTHORIZED` 401 | Invalid or missing token |
-| `BAD_REQUEST` 400 | Address limit reached (max 10) |
 
 ---
 
-#### `GET /users/me/addresses` — List Addresses 🔒
+#### `GET /users/me/addresses` — List My Addresses 🔒
 
 **Success Response** `200`
 ```json
@@ -670,7 +737,7 @@ Same structure as `GET /users/{id}/followers`.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -688,9 +755,9 @@ Same structure as `GET /users/{id}/followers`.
 
 **Request Body** — same fields as `POST /users/me/addresses`, all optional.
 
-**Success Response** `200` — updated `AddressResponse` (same structure as POST)
+**Success Response** `200` — updated address (same structure as POST)
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -717,7 +784,7 @@ Same structure as `GET /users/{id}/followers`.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -744,7 +811,7 @@ Same structure as `GET /users/{id}/followers`.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -757,6 +824,7 @@ Same structure as `GET /users/{id}/followers`.
 ### Seller
 
 #### `GET /users/{id}/shop` — Get Shop Profile
+No auth required.
 
 **Path Parameters**
 
@@ -785,7 +853,7 @@ Same structure as `GET /users/{id}/followers`.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -819,9 +887,9 @@ Same structure as `GET /users/{id}/followers`.
 | `bank_account` | string | No | — |
 | `bank_name` | string | No | max 128 |
 
-**Success Response** `201` — `SellerProfileResponse` (same structure as GET /users/{id}/shop)
+**Success Response** `201` — `SellerProfileResponse` (same structure as `GET /users/{id}/shop`)
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -848,7 +916,7 @@ Same structure as `GET /users/{id}/followers`.
 
 **Success Response** `200` — updated `SellerProfileResponse`
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
@@ -893,16 +961,17 @@ Same structure as `GET /users/{id}/followers`.
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
-| `BAD_REQUEST` 400 | Validation failed or invalid KYC state |
+| `BAD_REQUEST` 400 | Validation failed or invalid KYC state (already approved) |
 | `UNAUTHORIZED` 401 | Invalid or missing token |
+| `NOT_FOUND` 404 | Seller profile not found |
 
 ---
 
-#### `GET /users/me/seller/kyc/status` — Get KYC Status 🔒
+#### `GET /users/me/seller/kyc/status` — Get My KYC Status 🔒
 
 **Success Response** `200`
 ```json
@@ -917,92 +986,16 @@ Same structure as `GET /users/{id}/followers`.
 
 KYC status values: `none` | `pending` | `approved` | `rejected`
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
 | `UNAUTHORIZED` 401 | Invalid or missing token |
-| `NOT_FOUND` 404 | Seller profile not found |
-
----
-
-### Admin
-
-> All admin endpoints require BearerAuth with admin role.
-
-#### `GET /admin/users` — List / Search Users 🔒🔑
-
-**Query Parameters**
-
-| Param | Type | Required | Description |
-|-------|------|----------|-------------|
-| `q` | string | No | Search keyword |
-| `limit` | int | No | Max results (1–100, default 20) |
-| `cursor` | string | No | Pagination cursor |
-
-**Success Response** `200`
-```json
-{
-  "success": true,
-  "data": {
-    "users": [ { "...": "UserProfileResponse" } ],
-    "cursor": "eyJpZCI6Ii4uLiJ9"
-  },
-  "meta": { "timestamp": 1711584000 }
-}
-```
-
-**Error Responses**
-
-| Code | Condition |
-|------|-----------|
-| `UNAUTHORIZED` 401 | Invalid or missing token |
-| `FORBIDDEN` 403 | Not admin |
-
----
-
-#### `PUT /admin/users/{id}/status` — Update User Status 🔒🔑
-
-**Path Parameters**
-
-| Param | Type | Description |
-|-------|------|-------------|
-| `id` | UUID | User ID |
-
-**Request Body**
-```json
-{
-  "status": "suspended",
-  "reason": "Violation of terms"
-}
-```
-
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| `status` | string | Yes | `active` \| `inactive` \| `suspended` \| `banned` |
-| `reason` | string | No | max 500 |
-
-**Success Response** `200`
-```json
-{
-  "success": true,
-  "data": { "message": "status updated" },
-  "meta": { "timestamp": 1711584000 }
-}
-```
-
-**Error Responses**
-
-| Code | Condition |
-|------|-----------|
-| `BAD_REQUEST` 400 | Invalid UUID or validation failed |
-| `UNAUTHORIZED` 401 | Invalid or missing token |
-| `FORBIDDEN` 403 | Not admin |
-| `NOT_FOUND` 404 | User not found |
 
 ---
 
 #### `PUT /admin/users/{id}/kyc/approve` — Approve KYC 🔒🔑
+Admin-only. Approves KYC and upgrades user role to `seller`.
 
 **Path Parameters**
 
@@ -1019,17 +1012,19 @@ KYC status values: `none` | `pending` | `approved` | `rejected`
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
-| `BAD_REQUEST` 400 | Invalid UUID or invalid KYC state |
+| `BAD_REQUEST` 400 | Invalid UUID or KYC not in pending state |
 | `UNAUTHORIZED` 401 | Invalid or missing token |
 | `FORBIDDEN` 403 | Not admin |
+| `NOT_FOUND` 404 | Seller profile not found |
 
 ---
 
 #### `PUT /admin/users/{id}/kyc/reject` — Reject KYC 🔒🔑
+Admin-only.
 
 **Path Parameters**
 
@@ -1057,13 +1052,14 @@ KYC status values: `none` | `pending` | `approved` | `rejected`
 }
 ```
 
-**Error Responses**
+**Errors**
 
 | Code | Condition |
 |------|-----------|
 | `BAD_REQUEST` 400 | Invalid UUID or validation failed |
 | `UNAUTHORIZED` 401 | Invalid or missing token |
 | `FORBIDDEN` 403 | Not admin |
+| `NOT_FOUND` 404 | Seller profile not found |
 
 ---
 
@@ -1072,7 +1068,7 @@ KYC status values: `none` | `pending` | `approved` | `rejected`
 **Proto package:** `modami.user`
 **Service:** `UserInternalService`
 
-> gRPC is for internal service-to-service communication only.
+> For internal service-to-service calls only. Not accessible from FE/mobile.
 
 ---
 

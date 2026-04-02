@@ -6,7 +6,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:8086",
+    "host": "modami-user.techinsightsworld.com",
     "basePath": "/v1/user-services",
     "paths": {
         "/admin/users": {
