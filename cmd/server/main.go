@@ -96,7 +96,7 @@ func main() {
 	}()
 
 	go func() {
-		logger.Info(ctx, "HTTP server listening", logging.String("port", cfg.Server.Port))
+		logger.Info(ctx, "HTTP server listening", logging.String("addr", cfg.Server.ListenAddr()))
 		if serveErr := app.HTTPServer.ListenAndServe(); serveErr != nil {
 			logger.Error(ctx, "HTTP server error", serveErr)
 		}

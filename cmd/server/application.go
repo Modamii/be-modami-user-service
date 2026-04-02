@@ -18,6 +18,7 @@ import (
 	"be-modami-user-service/internal/service"
 	pkgkafka "be-modami-user-service/pkg/kafka"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -103,6 +104,23 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	router.Use(middleware.RateLimit())
 	router.Use(gin.Recovery())
 
+	origins := cfg.CORS.AllowedOrigins
+	if len(origins) == 0 {
+		origins = []string{
+			"http://localhost:5173",
+			"http://localhost:3000",
+			"http://localhost:8080",
+			"http://localhost:8081",
+		}
+	}
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     origins,
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Accept", "Authorization", "Content-Type", "X-Request-ID"},
+		AllowCredentials: cfg.CORS.AllowCredentials,
+		MaxAge:           300,
+	}))
+
 	registerRoutes(router, authMiddleware, userHandler, followHandler, reviewHandler, addressHandler, sellerHandler, adminHandler)
 
 	grpcServer := grpc.NewServer(
@@ -115,7 +133,7 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 		ExceptRoutes: []string{"/health", "/metrics"},
 	})
 	httpServer := &http.Server{
-		Addr:         fmt.Sprintf(":%s", cfg.Server.Port),
+		Addr:         cfg.Server.ListenAddr(),
 		Handler:      httpHandler,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,

@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	Server        ServerConfig        `mapstructure:"server"`
+	CORS          CORSConfig          `mapstructure:"cors"`
 	GRPC          GRPCConfig          `mapstructure:"grpc"`
 	Postgres      PostgresConfig      `mapstructure:"postgres"`
 	Redis         RedisConfig         `mapstructure:"redis"`
@@ -18,8 +19,28 @@ type Config struct {
 	Observability ObservabilityConfig `mapstructure:"observability"`
 }
 
+// CORSConfig controls gin-contrib/cors for browser clients.
+type CORSConfig struct {
+	AllowedOrigins   []string `mapstructure:"allowed_origins"`
+	AllowCredentials bool     `mapstructure:"allow_credentials"`
+}
+
 type ServerConfig struct {
+	Host string `mapstructure:"host"`
 	Port string `mapstructure:"port"`
+}
+
+// ListenAddr returns host:port for http.Server (defaults host 0.0.0.0, port 8080).
+func (s ServerConfig) ListenAddr() string {
+	host := strings.TrimSpace(s.Host)
+	if host == "" {
+		host = "0.0.0.0"
+	}
+	port := strings.TrimSpace(s.Port)
+	if port == "" {
+		port = "8080"
+	}
+	return fmt.Sprintf("%s:%s", host, port)
 }
 
 type GRPCConfig struct {
@@ -131,8 +152,16 @@ func Load() (*Config, error) {
 	v.AddConfigPath("./config")
 
 	// Defaults
+	v.SetDefault("server.host", "0.0.0.0")
 	v.SetDefault("server.port", "8080")
 	v.SetDefault("server.shutdown_timeout", "15s")
+	v.SetDefault("cors.allow_credentials", true)
+	v.SetDefault("cors.allowed_origins", []string{
+		"http://localhost:5173",
+		"http://localhost:3000",
+		"http://localhost:8080",
+		"http://localhost:8081",
+	})
 	v.SetDefault("postgres.max_idle_conns", 5)
 	v.SetDefault("postgres.max_active_conns", 25)
 	v.SetDefault("postgres.sslmode", "disable")
