@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"time"
 
+	apperror "be-modami-user-service/internal/apperror"
+	"be-modami-user-service/internal/domain"
+	"be-modami-user-service/internal/port"
+	"be-modami-user-service/pkg/pagination"
+
 	"github.com/google/uuid"
-	"github.com/modami/user-service/internal/domain"
-	"github.com/modami/user-service/internal/port"
-	apperror "github.com/modami/user-service/internal/apperror"
-	"github.com/modami/user-service/pkg/pagination"
 )
 
 type FollowService struct {

@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/modami/user-service/internal/domain"
-	"github.com/modami/user-service/internal/port"
-	pkgkafka "github.com/modami/user-service/pkg/kafka"
+	"be-modami-user-service/internal/domain"
+	"be-modami-user-service/internal/port"
+	pkgkafka "be-modami-user-service/pkg/kafka"
+
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )

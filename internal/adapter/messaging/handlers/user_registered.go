@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/modami/user-service/internal/domain"
-	"github.com/modami/user-service/internal/service"
+	"be-modami-user-service/internal/domain"
+	"be-modami-user-service/internal/service"
 )
 
 type UserRegisteredHandler struct {

@@ -3,8 +3,9 @@ package port
 import (
 	"context"
 
+	"be-modami-user-service/internal/domain"
+
 	"github.com/google/uuid"
-	"github.com/modami/user-service/internal/domain"
 )
 
 type CacheService interface {

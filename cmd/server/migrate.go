@@ -6,12 +6,13 @@ import (
 	"errors"
 	"fmt"
 
+	"be-modami-user-service/config"
+	"be-modami-user-service/migrations"
+
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/lib/pq"
-	"github.com/modami/user-service/config"
-	"github.com/modami/user-service/migrations"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )

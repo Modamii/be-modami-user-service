@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/modami/user-service/internal/domain"
-	"github.com/modami/user-service/internal/port"
-	"github.com/modami/user-service/internal/service"
-	pkgkafka "github.com/modami/user-service/pkg/kafka"
+	"be-modami-user-service/internal/domain"
+	"be-modami-user-service/internal/port"
+	"be-modami-user-service/internal/service"
+	pkgkafka "be-modami-user-service/pkg/kafka"
+
 	"github.com/twmb/franz-go/pkg/kgo"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
@@ -30,9 +31,9 @@ func NewConsumer(
 	userService *service.UserService,
 ) (*Consumer, error) {
 	cfg := &pkgkafka.KafkaConfig{
-		Brokers:         brokers,
-		ClientID:        clientID + "-consumer",
-		ConsumerGroupID: groupID,
+		Brokers:          brokers,
+		ClientID:         clientID + "-consumer",
+		ConsumerGroupID:  groupID,
 		ProducerOnlyMode: false,
 	}
 	ks, err := pkgkafka.NewKafkaService(cfg, env)

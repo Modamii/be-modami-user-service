@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
+	apperror "be-modami-user-service/internal/apperror"
+	"be-modami-user-service/internal/domain"
+	"be-modami-user-service/internal/dto"
+	"be-modami-user-service/internal/port"
+	"be-modami-user-service/pkg/pagination"
+
 	"github.com/google/uuid"
-	apperror "github.com/modami/user-service/internal/apperror"
-	"github.com/modami/user-service/internal/domain"
-	"github.com/modami/user-service/internal/dto"
-	"github.com/modami/user-service/internal/port"
-	"github.com/modami/user-service/pkg/pagination"
 )
 
 type UserService struct {

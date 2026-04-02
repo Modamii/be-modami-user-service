@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
+	"be-modami-user-service/internal/domain"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/modami/user-service/internal/domain"
 )
 
 type kycRepo struct {

@@ -12,10 +12,11 @@ import (
 	"sync"
 	"time"
 
+	"be-modami-user-service/internal/domain"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/modami/user-service/internal/domain"
 	gokit "gitlab.com/lifegoeson-libs/pkg-gokit/apperror"
 	"gitlab.com/lifegoeson-libs/pkg-gokit/response"
 )

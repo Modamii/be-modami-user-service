@@ -3,11 +3,12 @@ package handler
 import (
 	"strconv"
 
+	"be-modami-user-service/internal/adapter/handler/middleware"
+	"be-modami-user-service/internal/dto"
+	"be-modami-user-service/internal/service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/modami/user-service/internal/adapter/handler/middleware"
-	"github.com/modami/user-service/internal/dto"
-	"github.com/modami/user-service/internal/service"
 	"gitlab.com/lifegoeson-libs/pkg-gokit/response"
 )
 

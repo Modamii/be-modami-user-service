@@ -1,4 +1,4 @@
-module github.com/modami/user-service
+module be-modami-user-service
 
 go 1.25.0
 

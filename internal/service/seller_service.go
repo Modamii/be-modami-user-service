@@ -4,11 +4,12 @@ import (
 	"context"
 	"time"
 
+	apperror "be-modami-user-service/internal/apperror"
+	"be-modami-user-service/internal/domain"
+	"be-modami-user-service/internal/dto"
+	"be-modami-user-service/internal/port"
+
 	"github.com/google/uuid"
-	"github.com/modami/user-service/internal/domain"
-	"github.com/modami/user-service/internal/dto"
-	"github.com/modami/user-service/internal/port"
-	apperror "github.com/modami/user-service/internal/apperror"
 )
 
 type SellerService struct {

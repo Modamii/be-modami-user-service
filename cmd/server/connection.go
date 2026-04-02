@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 
+	"be-modami-user-service/config"
+	pkgredis "be-modami-user-service/pkg/storage/redis"
+
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/modami/user-service/config"
-	pkgredis "github.com/modami/user-service/pkg/storage/redis"
 	"github.com/redis/go-redis/v9"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"

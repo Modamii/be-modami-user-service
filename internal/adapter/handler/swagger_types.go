@@ -1,16 +1,17 @@
 package handler
 
 import (
-	"github.com/modami/user-service/internal/dto"
+	"be-modami-user-service/internal/dto"
+
 	"gitlab.com/lifegoeson-libs/pkg-gokit/apperror"
 )
 
 // SwaggerResponse is the standard API envelope used in Swagger docs.
 type SwaggerResponse struct {
-	Success bool             `json:"success" example:"true"`
-	Data    any              `json:"data,omitempty"`
-	Error   *SwaggerError    `json:"error,omitempty"`
-	Meta    *SwaggerMeta     `json:"meta,omitempty"`
+	Success bool          `json:"success" example:"true"`
+	Data    any           `json:"data,omitempty"`
+	Error   *SwaggerError `json:"error,omitempty"`
+	Meta    *SwaggerMeta  `json:"meta,omitempty"`
 }
 
 // SwaggerError represents the error portion of a response.

@@ -8,21 +8,22 @@ import (
 	"strconv"
 	"time"
 
+	"be-modami-user-service/internal/domain"
+
 	"github.com/google/uuid"
-	"github.com/modami/user-service/internal/domain"
 	"github.com/redis/go-redis/v9"
 	"github.com/sony/gobreaker"
 )
 
 const (
-	profileTTL      = 30 * time.Minute
-	statusTTL       = 10 * time.Minute
-	sellerTTL       = 30 * time.Minute
-	countTTL        = 15 * time.Minute
-	isFollowingTTL  = 10 * time.Minute
+	profileTTL       = 30 * time.Minute
+	statusTTL        = 10 * time.Minute
+	sellerTTL        = 30 * time.Minute
+	countTTL         = 15 * time.Minute
+	isFollowingTTL   = 10 * time.Minute
 	ratingSummaryTTL = 30 * time.Minute
-	addressesTTL    = 30 * time.Minute
-	kycStatusTTL    = 15 * time.Minute
+	addressesTTL     = 30 * time.Minute
+	kycStatusTTL     = 15 * time.Minute
 )
 
 type redisCache struct {

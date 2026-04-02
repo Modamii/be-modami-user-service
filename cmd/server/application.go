@@ -6,18 +6,19 @@ import (
 	"net/http"
 	"time"
 
+	"be-modami-user-service/config"
+	_ "be-modami-user-service/docs"
+	"be-modami-user-service/internal/adapter/cache"
+	grpcadapter "be-modami-user-service/internal/adapter/grpc"
+	"be-modami-user-service/internal/adapter/handler"
+	"be-modami-user-service/internal/adapter/handler/middleware"
+	"be-modami-user-service/internal/adapter/messaging"
+	"be-modami-user-service/internal/adapter/repository"
+	"be-modami-user-service/internal/port"
+	"be-modami-user-service/internal/service"
+	pkgkafka "be-modami-user-service/pkg/kafka"
+
 	"github.com/gin-gonic/gin"
-	"github.com/modami/user-service/config"
-	_ "github.com/modami/user-service/docs"
-	"github.com/modami/user-service/internal/adapter/cache"
-	grpcadapter "github.com/modami/user-service/internal/adapter/grpc"
-	"github.com/modami/user-service/internal/adapter/handler"
-	"github.com/modami/user-service/internal/adapter/handler/middleware"
-	"github.com/modami/user-service/internal/adapter/messaging"
-	"github.com/modami/user-service/internal/adapter/repository"
-	"github.com/modami/user-service/internal/port"
-	"github.com/modami/user-service/internal/service"
-	pkgkafka "github.com/modami/user-service/pkg/kafka"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
@@ -92,7 +93,6 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	addressHandler := handler.NewAddressHandler(addressService)
 	sellerHandler := handler.NewSellerHandler(sellerService, kycService)
 	adminHandler := handler.NewAdminHandler(userService, kycService)
-
 
 	// global middleware
 	if cfg.Observability.LogLevel != "debug" {

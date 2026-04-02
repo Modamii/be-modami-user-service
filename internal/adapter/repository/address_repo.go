@@ -5,11 +5,12 @@ import (
 	"errors"
 	"time"
 
+	apperror "be-modami-user-service/internal/apperror"
+	"be-modami-user-service/internal/domain"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/modami/user-service/internal/domain"
-	apperror "github.com/modami/user-service/internal/apperror"
 )
 
 type addressRepo struct {

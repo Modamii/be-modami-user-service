@@ -1,13 +1,14 @@
 package handler
 
 import (
+	"be-modami-user-service/internal/adapter/handler/middleware"
+	"be-modami-user-service/internal/domain"
+	"be-modami-user-service/internal/dto"
+	"be-modami-user-service/internal/service"
+	"be-modami-user-service/pkg/validator"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/modami/user-service/internal/adapter/handler/middleware"
-	"github.com/modami/user-service/internal/domain"
-	"github.com/modami/user-service/internal/dto"
-	"github.com/modami/user-service/internal/service"
-	"github.com/modami/user-service/pkg/validator"
 	"gitlab.com/lifegoeson-libs/pkg-gokit/response"
 )
 

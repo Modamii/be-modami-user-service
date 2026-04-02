@@ -18,7 +18,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/modami/user-service/config"
+	"be-modami-user-service/config"
+
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
