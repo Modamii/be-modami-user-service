@@ -104,7 +104,7 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	router.Use(middleware.RateLimit())
 	router.Use(gin.Recovery())
 
-	origins := cfg.CORS.AllowedOrigins
+	origins := cfg.App.AllowedOrigins
 	if len(origins) == 0 {
 		origins = []string{
 			"http://localhost:5173",
@@ -117,7 +117,7 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Accept", "Authorization", "Content-Type", "X-Request-ID"},
-		AllowCredentials: cfg.CORS.AllowCredentials,
+		AllowCredentials: cfg.App.AllowCredentials,
 		MaxAge:           300,
 	}))
 

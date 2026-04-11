@@ -10,7 +10,6 @@ import (
 
 type Config struct {
 	App           AppConfig           `mapstructure:"app"`
-	CORS          CORSConfig          `mapstructure:"cors"`
 	GRPC          GRPCConfig          `mapstructure:"grpc"`
 	Postgres      PostgresConfig      `mapstructure:"postgres"`
 	Redis         RedisConfig         `mapstructure:"redis"`
@@ -20,17 +19,19 @@ type Config struct {
 }
 
 type AppConfig struct {
-	Name            string `mapstructure:"name"`
-	Version         string `mapstructure:"version"`
-	Environment     string `mapstructure:"environment"`
-	Debug           bool   `mapstructure:"debug"`
-	Port            int    `mapstructure:"port"`
-	Host            string `mapstructure:"host"`
-	SwaggerHost     string `mapstructure:"swagger_host"`
-	ShutdownTimeout string `mapstructure:"shutdown_timeout"`
-	ReadTimeout     string `mapstructure:"read_timeout"`
-	WriteTimeout    string `mapstructure:"write_timeout"`
-	IdleTimeout     string `mapstructure:"idle_timeout"`
+	Name             string   `mapstructure:"name"`
+	Version          string   `mapstructure:"version"`
+	Environment      string   `mapstructure:"environment"`
+	Debug            bool     `mapstructure:"debug"`
+	Port             int      `mapstructure:"port"`
+	Host             string   `mapstructure:"host"`
+	SwaggerHost      string   `mapstructure:"swagger_host"`
+	ShutdownTimeout  string   `mapstructure:"shutdown_timeout"`
+	ReadTimeout      string   `mapstructure:"read_timeout"`
+	WriteTimeout     string   `mapstructure:"write_timeout"`
+	IdleTimeout      string   `mapstructure:"idle_timeout"`
+	AllowCredentials bool     `mapstructure:"allow_credentials"`
+	AllowedOrigins   []string `mapstructure:"allowed_origins"`
 }
 
 func (a AppConfig) ListenAddr() string {
@@ -75,12 +76,6 @@ func (a AppConfig) GetIdleTimeout() time.Duration {
 		return 120 * time.Second
 	}
 	return d
-}
-
-// CORSConfig controls gin-contrib/cors for browser clients.
-type CORSConfig struct {
-	AllowedOrigins   []string `mapstructure:"allowed_origins"`
-	AllowCredentials bool     `mapstructure:"allow_credentials"`
 }
 
 type GRPCConfig struct {
@@ -203,8 +198,8 @@ func Load() (*Config, error) {
 	v.SetDefault("app.read_timeout", "30s")
 	v.SetDefault("app.write_timeout", "30s")
 	v.SetDefault("app.idle_timeout", "120s")
-	v.SetDefault("cors.allow_credentials", true)
-	v.SetDefault("cors.allowed_origins", []string{
+	v.SetDefault("app.allow_credentials", true)
+	v.SetDefault("app.allowed_origins", []string{
 		"http://localhost:5173",
 		"http://localhost:3000",
 		"http://localhost:8080",
