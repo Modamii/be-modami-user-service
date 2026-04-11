@@ -133,7 +133,7 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 		ExceptRoutes: []string{"/health", "/metrics"},
 	})
 	httpServer := &http.Server{
-		Addr:         cfg.Server.ListenAddr(),
+		Addr:         cfg.App.ListenAddr(),
 		Handler:      httpHandler,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,

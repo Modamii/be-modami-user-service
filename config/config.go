@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	Server        ServerConfig        `mapstructure:"server"`
+	App           AppConfig           `mapstructure:"app"`
 	CORS          CORSConfig          `mapstructure:"cors"`
 	GRPC          GRPCConfig          `mapstructure:"grpc"`
 	Postgres      PostgresConfig      `mapstructure:"postgres"`
@@ -19,28 +19,68 @@ type Config struct {
 	Observability ObservabilityConfig `mapstructure:"observability"`
 }
 
+type AppConfig struct {
+	Name            string `mapstructure:"name"`
+	Version         string `mapstructure:"version"`
+	Environment     string `mapstructure:"environment"`
+	Debug           bool   `mapstructure:"debug"`
+	Port            int    `mapstructure:"port"`
+	Host            string `mapstructure:"host"`
+	SwaggerHost     string `mapstructure:"swagger_host"`
+	ShutdownTimeout string `mapstructure:"shutdown_timeout"`
+	ReadTimeout     string `mapstructure:"read_timeout"`
+	WriteTimeout    string `mapstructure:"write_timeout"`
+	IdleTimeout     string `mapstructure:"idle_timeout"`
+}
+
+func (a AppConfig) ListenAddr() string {
+	host := strings.TrimSpace(a.Host)
+	if host == "" {
+		host = "0.0.0.0"
+	}
+	port := a.Port
+	if port <= 0 {
+		port = 8080
+	}
+	return fmt.Sprintf("%s:%d", host, port)
+}
+
+func (a AppConfig) GetShutdownTimeout() time.Duration {
+	d, err := time.ParseDuration(a.ShutdownTimeout)
+	if err != nil {
+		return 30 * time.Second
+	}
+	return d
+}
+
+func (a AppConfig) GetReadTimeout() time.Duration {
+	d, err := time.ParseDuration(a.ReadTimeout)
+	if err != nil {
+		return 30 * time.Second
+	}
+	return d
+}
+
+func (a AppConfig) GetWriteTimeout() time.Duration {
+	d, err := time.ParseDuration(a.WriteTimeout)
+	if err != nil {
+		return 30 * time.Second
+	}
+	return d
+}
+
+func (a AppConfig) GetIdleTimeout() time.Duration {
+	d, err := time.ParseDuration(a.IdleTimeout)
+	if err != nil {
+		return 120 * time.Second
+	}
+	return d
+}
+
 // CORSConfig controls gin-contrib/cors for browser clients.
 type CORSConfig struct {
 	AllowedOrigins   []string `mapstructure:"allowed_origins"`
 	AllowCredentials bool     `mapstructure:"allow_credentials"`
-}
-
-type ServerConfig struct {
-	Host string `mapstructure:"host"`
-	Port string `mapstructure:"port"`
-}
-
-// ListenAddr returns host:port for http.Server (defaults host 0.0.0.0, port 8080).
-func (s ServerConfig) ListenAddr() string {
-	host := strings.TrimSpace(s.Host)
-	if host == "" {
-		host = "0.0.0.0"
-	}
-	port := strings.TrimSpace(s.Port)
-	if port == "" {
-		port = "8080"
-	}
-	return fmt.Sprintf("%s:%s", host, port)
 }
 
 type GRPCConfig struct {
@@ -152,9 +192,17 @@ func Load() (*Config, error) {
 	v.AddConfigPath("./config")
 
 	// Defaults
-	v.SetDefault("server.host", "0.0.0.0")
-	v.SetDefault("server.port", "8080")
-	v.SetDefault("server.shutdown_timeout", "15s")
+	v.SetDefault("app.name", "be-modami-user-service")
+	v.SetDefault("app.version", "1.0.0")
+	v.SetDefault("app.environment", "local")
+	v.SetDefault("app.debug", false)
+	v.SetDefault("app.port", 8086)
+	v.SetDefault("app.host", "0.0.0.0")
+	v.SetDefault("app.swagger_host", "localhost:8086")
+	v.SetDefault("app.shutdown_timeout", "30s")
+	v.SetDefault("app.read_timeout", "30s")
+	v.SetDefault("app.write_timeout", "30s")
+	v.SetDefault("app.idle_timeout", "120s")
 	v.SetDefault("cors.allow_credentials", true)
 	v.SetDefault("cors.allowed_origins", []string{
 		"http://localhost:5173",
@@ -165,8 +213,6 @@ func Load() (*Config, error) {
 	v.SetDefault("postgres.max_idle_conns", 5)
 	v.SetDefault("postgres.max_active_conns", 25)
 	v.SetDefault("postgres.sslmode", "disable")
-	v.SetDefault("app.name", "be-modami-auth-service")
-	v.SetDefault("app.version", "1.0.0")
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.format", "json")
 

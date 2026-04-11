@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"be-modami-user-service/config"
+	"be-modami-user-service/docs"
 
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
@@ -30,6 +31,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "failed to load config: %v\n", err)
 		os.Exit(1)
 	}
+	docs.SwaggerInfo.Host = cfg.App.SwaggerHost
 
 	if err := logger.Init(logging.Config{
 		ServiceName:    cfg.Observability.ServiceName,
@@ -96,7 +98,7 @@ func main() {
 	}()
 
 	go func() {
-		logger.Info(ctx, "HTTP server listening", logging.String("addr", cfg.Server.ListenAddr()))
+		logger.Info(ctx, "HTTP server listening", logging.String("addr", cfg.App.ListenAddr()))
 		if serveErr := app.HTTPServer.ListenAndServe(); serveErr != nil {
 			logger.Error(ctx, "HTTP server error", serveErr)
 		}
