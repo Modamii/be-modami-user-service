@@ -11,8 +11,8 @@ import (
 	"be-modami-user-service/internal/domain"
 
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 	"github.com/sony/gobreaker"
+	gokit_redis "gitlab.com/lifegoeson-libs/pkg-gokit/redis"
 )
 
 const (
@@ -27,11 +27,11 @@ const (
 )
 
 type redisCache struct {
-	client  *redis.Client
+	client  gokit_redis.CachePort
 	breaker *gobreaker.CircuitBreaker
 }
 
-func NewRedisCache(client *redis.Client) *redisCache {
+func NewRedisCache(client gokit_redis.CachePort) *redisCache {
 	st := gobreaker.Settings{
 		Name:        "redis-cache",
 		MaxRequests: 5,
@@ -55,12 +55,9 @@ func (c *redisCache) key(parts ...string) string {
 
 func (c *redisCache) get(ctx context.Context, key string) (string, error) {
 	val, err := c.breaker.Execute(func() (interface{}, error) {
-		return c.client.Get(ctx, key).Result()
+		return c.client.Get(ctx, key)
 	})
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return "", redis.Nil
-		}
 		return "", err
 	}
 	return val.(string), nil
@@ -68,14 +65,14 @@ func (c *redisCache) get(ctx context.Context, key string) (string, error) {
 
 func (c *redisCache) set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
 	_, err := c.breaker.Execute(func() (interface{}, error) {
-		return nil, c.client.Set(ctx, key, value, ttl).Err()
+		return nil, c.client.Set(ctx, key, value, ttl)
 	})
 	return err
 }
 
 func (c *redisCache) del(ctx context.Context, keys ...string) error {
 	_, err := c.breaker.Execute(func() (interface{}, error) {
-		return nil, c.client.Del(ctx, keys...).Err()
+		return nil, c.client.Delete(ctx, keys...)
 	})
 	return err
 }
@@ -84,7 +81,7 @@ func (c *redisCache) GetProfile(ctx context.Context, userID uuid.UUID) (*domain.
 	k := c.key("profile", userID.String())
 	val, err := c.get(ctx, k)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
+		if errors.Is(err, gokit_redis.ErrCacheMiss) {
 			return nil, nil
 		}
 		return nil, err
@@ -113,7 +110,7 @@ func (c *redisCache) GetStatus(ctx context.Context, userID uuid.UUID) (domain.Us
 	k := c.key("status", userID.String())
 	val, err := c.get(ctx, k)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
+		if errors.Is(err, gokit_redis.ErrCacheMiss) {
 			return "", nil
 		}
 		return "", err
@@ -130,7 +127,7 @@ func (c *redisCache) GetSellerProfile(ctx context.Context, userID uuid.UUID) (*d
 	k := c.key("seller", userID.String())
 	val, err := c.get(ctx, k)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
+		if errors.Is(err, gokit_redis.ErrCacheMiss) {
 			return nil, nil
 		}
 		return nil, err
@@ -159,7 +156,7 @@ func (c *redisCache) GetFollowerCount(ctx context.Context, userID uuid.UUID) (in
 	k := c.key("follower_count", userID.String())
 	val, err := c.get(ctx, k)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
+		if errors.Is(err, gokit_redis.ErrCacheMiss) {
 			return -1, nil
 		}
 		return 0, err
@@ -177,7 +174,7 @@ func (c *redisCache) GetFollowingCount(ctx context.Context, userID uuid.UUID) (i
 	k := c.key("following_count", userID.String())
 	val, err := c.get(ctx, k)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
+		if errors.Is(err, gokit_redis.ErrCacheMiss) {
 			return -1, nil
 		}
 		return 0, err
@@ -195,9 +192,6 @@ func (c *redisCache) IsFollowing(ctx context.Context, followerID, followingID uu
 	k := c.key("is_following", followerID.String(), followingID.String())
 	val, err := c.get(ctx, k)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return false, redis.Nil
-		}
 		return false, err
 	}
 	return val == "1", nil
@@ -225,7 +219,7 @@ func (c *redisCache) GetRatingSummary(ctx context.Context, userID uuid.UUID) (*d
 	k := c.key("rating_summary", userID.String())
 	val, err := c.get(ctx, k)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
+		if errors.Is(err, gokit_redis.ErrCacheMiss) {
 			return nil, nil
 		}
 		return nil, err
@@ -254,7 +248,7 @@ func (c *redisCache) GetAddresses(ctx context.Context, userID uuid.UUID) ([]*dom
 	k := c.key("addresses", userID.String())
 	val, err := c.get(ctx, k)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
+		if errors.Is(err, gokit_redis.ErrCacheMiss) {
 			return nil, nil
 		}
 		return nil, err
@@ -283,7 +277,7 @@ func (c *redisCache) GetKYCStatus(ctx context.Context, userID uuid.UUID) (domain
 	k := c.key("kyc_status", userID.String())
 	val, err := c.get(ctx, k)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
+		if errors.Is(err, gokit_redis.ErrCacheMiss) {
 			return "", nil
 		}
 		return "", err

@@ -10,18 +10,18 @@ import (
 	"be-modami-user-service/internal/service"
 	pkgkafka "be-modami-user-service/pkg/kafka"
 
-	"github.com/twmb/franz-go/pkg/kgo"
+	gokit_kafka "gitlab.com/lifegoeson-libs/pkg-gokit/kafka"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
 
-// Consumer wraps a pkg/kafka.KafkaService and dispatches auth.events to the correct handlers.
+// Consumer wraps a pkg-gokit KafkaService and dispatches auth events to the correct handlers.
 type Consumer struct {
-	kafkaService *pkgkafka.KafkaService
+	kafkaService *gokit_kafka.KafkaService
 	handler      *authEventsHandler
 }
 
-// NewConsumer creates a Kafka consumer configured for the auth.events topic.
+// NewConsumer creates a Kafka consumer configured for auth event topics.
 func NewConsumer(
 	brokers []string,
 	groupID string,
@@ -30,13 +30,13 @@ func NewConsumer(
 	processedRepo port.ProcessedEventRepository,
 	userService *service.UserService,
 ) (*Consumer, error) {
-	cfg := &pkgkafka.KafkaConfig{
+	cfg := &gokit_kafka.Config{
 		Brokers:          brokers,
 		ClientID:         clientID + "-consumer",
 		ConsumerGroupID:  groupID,
 		ProducerOnlyMode: false,
 	}
-	ks, err := pkgkafka.NewKafkaService(cfg, env)
+	ks, err := gokit_kafka.NewKafkaService(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kafka consumer service: %w", err)
 	}
@@ -45,13 +45,14 @@ func NewConsumer(
 		handler: &authEventsHandler{
 			userService:   userService,
 			processedRepo: processedRepo,
+			env:           env,
 		},
 	}, nil
 }
 
 // Start runs the consumer loop; blocks until ctx is cancelled.
 func (c *Consumer) Start(ctx context.Context) {
-	if err := c.kafkaService.StartConsumer(ctx, []pkgkafka.ConsumerHandler{c.handler}); err != nil {
+	if err := c.kafkaService.StartConsumer(ctx, []gokit_kafka.ConsumerHandler{c.handler}); err != nil {
 		logger.Error(ctx, "kafka consumer exited", err)
 	}
 }
@@ -60,26 +61,25 @@ func (c *Consumer) Close() error {
 	return c.kafkaService.Close()
 }
 
-// authEventsHandler implements pkgkafka.ConsumerHandler for auth user topics.
+// authEventsHandler implements gokit_kafka.ConsumerHandler for auth user topics.
 type authEventsHandler struct {
 	userService   *service.UserService
 	processedRepo port.ProcessedEventRepository
+	env           string
 }
 
 func (h *authEventsHandler) GetTopics() []string {
 	return []string{
-		pkgkafka.TopicAuthUserCreated,
-		pkgkafka.TopicAuthUserUpdated,
+		pkgkafka.GetTopicWithEnv(h.env, pkgkafka.TopicAuthUserCreated),
+		pkgkafka.GetTopicWithEnv(h.env, pkgkafka.TopicAuthUserUpdated),
 	}
 }
 
-func (h *authEventsHandler) HandleMessage(ctx context.Context, record *kgo.Record) error {
+func (h *authEventsHandler) HandleMessage(ctx context.Context, msg *gokit_kafka.Message) error {
 	// Derive event ID from headers, falling back to partition+offset.
-	eventID := fmt.Sprintf("%s-%d-%d", record.Topic, record.Partition, record.Offset)
-	for _, hdr := range record.Headers {
-		if hdr.Key == "event_id" {
-			eventID = string(hdr.Value)
-		}
+	eventID := fmt.Sprintf("%s-%d-%d", msg.Topic, msg.Partition, msg.Offset)
+	if val, ok := msg.Headers["event_id"]; ok {
+		eventID = string(val)
 	}
 
 	// Idempotency check.
@@ -95,7 +95,7 @@ func (h *authEventsHandler) HandleMessage(ctx context.Context, record *kgo.Recor
 	var envelope struct {
 		Type string `json:"type"`
 	}
-	if err := json.Unmarshal(record.Value, &envelope); err != nil {
+	if err := json.Unmarshal(msg.Value, &envelope); err != nil {
 		return fmt.Errorf("failed to decode event type: %w", err)
 	}
 
@@ -103,14 +103,14 @@ func (h *authEventsHandler) HandleMessage(ctx context.Context, record *kgo.Recor
 	switch envelope.Type {
 	case "user.created":
 		var event domain.AuthUserCreatedEvent
-		if err := json.Unmarshal(record.Value, &event); err != nil {
+		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			return fmt.Errorf("failed to unmarshal user.created: %w", err)
 		}
 		handlerErr = h.userService.CreateFromEvent(ctx, &event)
 
 	case "user.updated":
 		var event domain.AuthUserUpdatedEvent
-		if err := json.Unmarshal(record.Value, &event); err != nil {
+		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			return fmt.Errorf("failed to unmarshal user.updated: %w", err)
 		}
 		handlerErr = h.userService.SyncFromAuthUpdate(ctx, &event)
@@ -124,7 +124,7 @@ func (h *authEventsHandler) HandleMessage(ctx context.Context, record *kgo.Recor
 		return handlerErr
 	}
 
-	if err := h.processedRepo.MarkProcessed(ctx, eventID, record.Topic); err != nil {
+	if err := h.processedRepo.MarkProcessed(ctx, eventID, msg.Topic); err != nil {
 		logger.Error(ctx, "failed to mark event processed", err, logging.String("event_id", eventID))
 	}
 	return nil

@@ -4,17 +4,16 @@ import (
 	"context"
 
 	"be-modami-user-service/config"
-	pkgredis "be-modami-user-service/pkg/storage/redis"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/redis/go-redis/v9"
+	gokit_redis "gitlab.com/lifegoeson-libs/pkg-gokit/redis"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
 
 type Connections struct {
 	DB    *pgxpool.Pool
-	Redis *redis.Client
+	Redis gokit_redis.CachePort
 }
 
 func newConnections(ctx context.Context, cfg *config.Config) (*Connections, error) {
@@ -28,18 +27,22 @@ func newConnections(ctx context.Context, cfg *config.Config) (*Connections, erro
 	}
 	logger.Info(ctx, "connected to postgres")
 
-	redisClient, err := pkgredis.NewRedisClient(pkgredis.RedisConfig{
-		Addr:     cfg.Redis.Addr(),
+	var redisCache gokit_redis.CachePort
+	redisCfg := gokit_redis.Config{
+		Addrs:    []string{cfg.Redis.Addr()},
 		Password: cfg.Redis.Pass,
 		DB:       cfg.Redis.Database,
-	})
-	if err != nil {
-		logger.Warn(ctx, "redis connection failed (continuing without cache)", logging.String("error", err.Error()))
+	}
+	adapter, redisErr := gokit_redis.NewAdapter(redisCfg)
+	if redisErr != nil {
+		logger.Warn(ctx, "redis connection failed (continuing without cache)", logging.String("error", redisErr.Error()))
+	} else {
+		redisCache = adapter
 	}
 
 	return &Connections{
 		DB:    dbPool,
-		Redis: redisClient,
+		Redis: redisCache,
 	}, nil
 }
 
@@ -48,6 +51,6 @@ func (c *Connections) Close(ctx context.Context) {
 		c.DB.Close()
 	}
 	if c.Redis != nil {
-		pkgredis.CloseRedis(ctx, c.Redis)
+		_ = c.Redis.Close()
 	}
 }

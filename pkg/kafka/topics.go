@@ -1,31 +1,18 @@
 package kafka
 
-// Topic names (base, without env prefix — prepend env with GetTopicWithEnv)
-const (
-	// Consumed: events produced by auth-service
-	TopicAuthUserCreated = "modami.auth.user.created" // user registered in Keycloak
-	TopicAuthUserUpdated = "modami.auth.user.updated" // user profile updated in Keycloak
+import "strings"
 
-	// Produced: events published by user-service
-	TopicUserEvents    = "modami.user.events"     // all user service domain events
-	TopicUserEventsDLQ = "modami.user.events.dlq" // dead letter queue
+const (
+	TopicAuthUserCreated = "auth.user.created"
+	TopicAuthUserUpdated = "auth.user.updated"
+	TopicUserEvents      = "user.events"
 )
 
-// GetTopicWithEnv returns the fully-qualified topic name.
-// If env is empty, the base topic name is returned unchanged.
+// GetTopicWithEnv returns the topic name prefixed with the environment (e.g. "dev.user.events").
+// If env is empty, the base topic is returned as-is.
 func GetTopicWithEnv(env, topic string) string {
 	if env == "" {
 		return topic
 	}
-	return env + "." + topic
-}
-
-// GetAllTopics returns all topics managed by this service.
-func GetAllTopics(env string) []string {
-	return []string{
-		GetTopicWithEnv(env, TopicAuthUserCreated),
-		GetTopicWithEnv(env, TopicAuthUserUpdated),
-		GetTopicWithEnv(env, TopicUserEvents),
-		GetTopicWithEnv(env, TopicUserEventsDLQ),
-	}
+	return strings.ToLower(env) + "." + topic
 }

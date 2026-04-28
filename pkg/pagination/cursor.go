@@ -6,26 +6,24 @@ import (
 	"time"
 )
 
-// EncodeCursor encodes a time.Time into a base64 cursor string.
+// EncodeCursor encodes a time.Time into a base64 URL-safe cursor string.
 func EncodeCursor(t time.Time) string {
-	val := fmt.Sprintf("%d", t.UnixNano())
-	return base64.StdEncoding.EncodeToString([]byte(val))
+	return base64.URLEncoding.EncodeToString([]byte(t.UTC().Format(time.RFC3339Nano)))
 }
 
-// DecodeCursor decodes a base64 cursor string into a time.Time pointer.
+// DecodeCursor decodes a base64 cursor string back to a *time.Time.
+// Returns nil, nil when the cursor is empty (first page).
 func DecodeCursor(cursor string) (*time.Time, error) {
 	if cursor == "" {
 		return nil, nil
 	}
-	b, err := base64.StdEncoding.DecodeString(cursor)
+	b, err := base64.URLEncoding.DecodeString(cursor)
 	if err != nil {
 		return nil, fmt.Errorf("invalid cursor: %w", err)
 	}
-	var nanos int64
-	_, err = fmt.Sscanf(string(b), "%d", &nanos)
+	t, err := time.Parse(time.RFC3339Nano, string(b))
 	if err != nil {
-		return nil, fmt.Errorf("invalid cursor value: %w", err)
+		return nil, fmt.Errorf("invalid cursor: %w", err)
 	}
-	t := time.Unix(0, nanos).UTC()
 	return &t, nil
 }

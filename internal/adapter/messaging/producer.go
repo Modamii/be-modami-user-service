@@ -9,51 +9,53 @@ import (
 	"be-modami-user-service/internal/port"
 	pkgkafka "be-modami-user-service/pkg/kafka"
 
+	gokit_kafka "gitlab.com/lifegoeson-libs/pkg-gokit/kafka"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
 
 type kafkaProducer struct {
-	kafkaService *pkgkafka.KafkaService
+	kafkaService *gokit_kafka.KafkaService
 	outbox       port.OutboxRepository
-	env          string
+	topic        string // pre-computed full topic name
 }
 
-// NewKafkaProducer creates a producer-only KafkaService for publishing user.events.
+// NewKafkaProducer creates a producer-only KafkaService for publishing user events.
 func NewKafkaProducer(brokers []string, env string, clientID string, outbox port.OutboxRepository) (*kafkaProducer, error) {
-	cfg := &pkgkafka.KafkaConfig{
+	cfg := &gokit_kafka.Config{
 		Brokers:          brokers,
 		ClientID:         clientID + "-producer",
 		ProducerOnlyMode: true,
 	}
-	ks, err := pkgkafka.NewKafkaService(cfg, env)
+	ks, err := gokit_kafka.NewKafkaService(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kafka producer service: %w", err)
 	}
+
+	topic := pkgkafka.GetTopicWithEnv(env, pkgkafka.TopicUserEvents)
 
 	ctx := context.Background()
 	if err := ks.EnsureTopics(ctx); err != nil {
 		logger.Warn(ctx, "failed to ensure kafka topics", logging.String("error", err.Error()))
 	}
 
-	return &kafkaProducer{kafkaService: ks, outbox: outbox, env: env}, nil
+	return &kafkaProducer{kafkaService: ks, outbox: outbox, topic: topic}, nil
 }
 
 func (p *kafkaProducer) PublishRaw(ctx context.Context, topic, key string, payload []byte) error {
-	msg := &pkgkafka.ProducerMessage{Key: key, Value: json.RawMessage(payload)}
-	return p.kafkaService.EmitToFullTopic(ctx, topic, msg)
+	msg := &gokit_kafka.ProducerMessage{Key: key, Value: json.RawMessage(payload)}
+	return p.kafkaService.Emit(ctx, topic, msg)
 }
 
 func (p *kafkaProducer) publish(ctx context.Context, key string, value interface{}) error {
-	msg := &pkgkafka.ProducerMessage{Key: key, Value: value}
-	if err := p.kafkaService.Emit(ctx, pkgkafka.TopicUserEvents, msg); err != nil {
+	msg := &gokit_kafka.ProducerMessage{Key: key, Value: value}
+	if err := p.kafkaService.Emit(ctx, p.topic, msg); err != nil {
 		// Fallback: persist to outbox for background retry.
 		payload, jsonErr := json.Marshal(value)
 		if jsonErr != nil {
 			return fmt.Errorf("kafka emit failed: %w; marshal for outbox failed: %v", err, jsonErr)
 		}
-		topic := pkgkafka.GetTopicWithEnv(p.env, pkgkafka.TopicUserEvents)
-		if outboxErr := p.outbox.Create(ctx, topic, key, payload); outboxErr != nil {
+		if outboxErr := p.outbox.Create(ctx, p.topic, key, payload); outboxErr != nil {
 			return fmt.Errorf("kafka emit failed: %w; outbox fallback failed: %v", err, outboxErr)
 		}
 		return nil

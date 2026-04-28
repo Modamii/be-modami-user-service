@@ -29,7 +29,8 @@
       "Bash(make migrate-create:*)",
       "Bash(ls:*)",
       "Bash(printenv:*)",
-      "Bash(go run:*)"
+      "Bash(go run:*)",
+      "Bash(make build:*)"
     ]
   }
 }
