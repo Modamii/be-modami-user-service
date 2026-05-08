@@ -8,10 +8,9 @@ import (
 
 	"be-modami-user-service/config"
 	_ "be-modami-user-service/docs"
-	"be-modami-user-service/internal/adapter/cache"
 	grpcadapter "be-modami-user-service/internal/adapter/grpc"
-	"be-modami-user-service/internal/adapter/handler"
-	"be-modami-user-service/internal/adapter/handler/middleware"
+	"be-modami-user-service/internal/adapter/http/handler"
+	"be-modami-user-service/internal/adapter/http/middleware"
 	"be-modami-user-service/internal/adapter/messaging"
 	"be-modami-user-service/internal/adapter/repository"
 	"be-modami-user-service/internal/port"
@@ -38,18 +37,17 @@ type Application struct {
 }
 
 func newApplication(ctx context.Context, cfg *config.Config, conns *Connections) (*Application, error) {
-	// repositories
-	userRepo := repository.NewUserRepository(conns.DB)
-	sellerRepo := repository.NewSellerProfileRepository(conns.DB)
-	followRepo := repository.NewFollowRepository(conns.DB)
-	reviewRepo := repository.NewReviewRepository(conns.DB)
-	addressRepo := repository.NewAddressRepository(conns.DB)
+	// repositories 
+	userRepo := repository.NewCachedUserRepository(repository.NewUserRepository(conns.DB), conns.Redis)
+	sellerRepo := repository.NewCachedSellerRepository(repository.NewSellerProfileRepository(conns.DB), conns.Redis)
+	followRepo := repository.NewCachedFollowRepository(repository.NewFollowRepository(conns.DB), conns.Redis)
+	reviewRepo := repository.NewCachedReviewRepository(repository.NewReviewRepository(conns.DB), conns.Redis)
+	addressRepo := repository.NewCachedAddressRepository(repository.NewAddressRepository(conns.DB), conns.Redis)
 	kycRepo := repository.NewKYCRepository(conns.DB)
 	outboxRepo := repository.NewOutboxRepository(conns.DB)
 	processedEventRepo := repository.NewProcessedEventRepository(conns.DB)
 
 	txManager := repository.NewTxManager(conns.DB)
-	cacheService := cache.NewRedisCache(conns.Redis)
 	publisher, err := messaging.NewKafkaProducer(
 		cfg.Kafka.Brokers(),
 		cfg.Kafka.Env,
@@ -63,12 +61,12 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	eventsTopic := pkgkafka.GetTopicWithEnv(cfg.Kafka.Env, pkgkafka.TopicUserEvents)
 
 	// services
-	userService := service.NewUserService(userRepo, cacheService, txManager, outboxRepo, eventsTopic)
-	followService := service.NewFollowService(followRepo, cacheService, txManager, outboxRepo, eventsTopic)
-	reviewService := service.NewReviewService(reviewRepo, userRepo, sellerRepo, cacheService, txManager, outboxRepo, eventsTopic)
-	addressService := service.NewAddressService(addressRepo, cacheService)
-	sellerService := service.NewSellerService(sellerRepo, userRepo, cacheService)
-	kycService := service.NewKYCService(kycRepo, sellerRepo, userRepo, cacheService, txManager, outboxRepo, eventsTopic)
+	userService := service.NewUserService(userRepo, txManager, outboxRepo, eventsTopic)
+	followService := service.NewFollowService(followRepo, txManager, outboxRepo, eventsTopic)
+	reviewService := service.NewReviewService(reviewRepo, userRepo, sellerRepo, txManager, outboxRepo, eventsTopic)
+	addressService := service.NewAddressService(addressRepo)
+	sellerService := service.NewSellerService(sellerRepo, userRepo)
+	kycService := service.NewKYCService(kycRepo, sellerRepo, userRepo, txManager, outboxRepo, eventsTopic)
 
 	consumer, err := messaging.NewConsumer(
 		cfg.Kafka.Brokers(),

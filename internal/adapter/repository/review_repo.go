@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	apperror "be-modami-user-service/internal/apperror"
 	"be-modami-user-service/internal/domain"
+	apperror "be-modami-user-service/pkg/apperror"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"

@@ -20,6 +20,7 @@ import (
 
 	"be-modami-user-service/config"
 	"be-modami-user-service/docs"
+	"be-modami-user-service/migrations"
 
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
@@ -48,12 +49,7 @@ func main() {
 	ctx := context.Background()
 	defer logger.Shutdown(ctx)
 
-	if err := ensureDatabase(ctx, cfg.Postgres); err != nil {
-		logger.Error(ctx, "failed to ensure database", err)
-		os.Exit(1)
-	}
-
-	if err := runMigrations(ctx, cfg.Postgres.MigrationDSN()); err != nil {
+	if err := migrations.RunMigrations(ctx, cfg.Postgres.MigrationDSN()); err != nil {
 		logger.Error(ctx, "failed to run migrations", err)
 		os.Exit(1)
 	}

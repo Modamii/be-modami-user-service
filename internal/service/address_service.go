@@ -4,27 +4,20 @@ import (
 	"context"
 	"time"
 
-	apperror "be-modami-user-service/internal/apperror"
 	"be-modami-user-service/internal/domain"
 	"be-modami-user-service/internal/dto"
 	"be-modami-user-service/internal/port"
+	apperror "be-modami-user-service/pkg/apperror"
 
 	"github.com/google/uuid"
 )
 
 type AddressService struct {
 	addressRepo port.AddressRepository
-	cache       port.CacheService
 }
 
-func NewAddressService(
-	addressRepo port.AddressRepository,
-	cache port.CacheService,
-) *AddressService {
-	return &AddressService{
-		addressRepo: addressRepo,
-		cache:       cache,
-	}
+func NewAddressService(addressRepo port.AddressRepository) *AddressService {
+	return &AddressService{addressRepo: addressRepo}
 }
 
 func (s *AddressService) AddAddress(ctx context.Context, userID uuid.UUID, req dto.CreateAddressRequest) (*domain.Address, error) {
@@ -59,23 +52,11 @@ func (s *AddressService) AddAddress(ctx context.Context, userID uuid.UUID, req d
 		return nil, err
 	}
 
-	_ = s.cache.DeleteAddresses(ctx, userID)
 	return addr, nil
 }
 
 func (s *AddressService) ListAddresses(ctx context.Context, userID uuid.UUID) ([]*domain.Address, error) {
-	cached, err := s.cache.GetAddresses(ctx, userID)
-	if err == nil && cached != nil {
-		return cached, nil
-	}
-
-	addrs, err := s.addressRepo.ListByUserID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	_ = s.cache.SetAddresses(ctx, userID, addrs)
-	return addrs, nil
+	return s.addressRepo.ListByUserID(ctx, userID)
 }
 
 func (s *AddressService) UpdateAddress(ctx context.Context, userID, addrID uuid.UUID, req dto.UpdateAddressRequest) (*domain.Address, error) {
@@ -123,22 +104,13 @@ func (s *AddressService) UpdateAddress(ctx context.Context, userID, addrID uuid.
 		return nil, err
 	}
 
-	_ = s.cache.DeleteAddresses(ctx, userID)
 	return addr, nil
 }
 
 func (s *AddressService) DeleteAddress(ctx context.Context, userID, addrID uuid.UUID) error {
-	if err := s.addressRepo.Delete(ctx, addrID, userID); err != nil {
-		return err
-	}
-	_ = s.cache.DeleteAddresses(ctx, userID)
-	return nil
+	return s.addressRepo.Delete(ctx, addrID, userID)
 }
 
 func (s *AddressService) SetDefault(ctx context.Context, userID, addrID uuid.UUID) error {
-	if err := s.addressRepo.SetDefault(ctx, addrID, userID); err != nil {
-		return err
-	}
-	_ = s.cache.DeleteAddresses(ctx, userID)
-	return nil
+	return s.addressRepo.SetDefault(ctx, addrID, userID)
 }

@@ -6,9 +6,9 @@ import (
 	"math"
 	"time"
 
-	apperror "be-modami-user-service/internal/apperror"
 	"be-modami-user-service/internal/domain"
 	"be-modami-user-service/internal/port"
+	apperror "be-modami-user-service/pkg/apperror"
 	"be-modami-user-service/pkg/pagination"
 
 	"github.com/google/uuid"
@@ -18,7 +18,6 @@ type ReviewService struct {
 	reviewRepo port.ReviewRepository
 	userRepo   port.UserRepository
 	sellerRepo port.SellerProfileRepository
-	cache      port.CacheService
 	txManager  port.TxManager
 	outboxRepo port.OutboxRepository
 	topic      string
@@ -28,7 +27,6 @@ func NewReviewService(
 	reviewRepo port.ReviewRepository,
 	userRepo port.UserRepository,
 	sellerRepo port.SellerProfileRepository,
-	cache port.CacheService,
 	txManager port.TxManager,
 	outboxRepo port.OutboxRepository,
 	topic string,
@@ -37,7 +35,6 @@ func NewReviewService(
 		reviewRepo: reviewRepo,
 		userRepo:   userRepo,
 		sellerRepo: sellerRepo,
-		cache:      cache,
 		txManager:  txManager,
 		outboxRepo: outboxRepo,
 		topic:      topic,
@@ -53,7 +50,6 @@ func (s *ReviewService) CreateReview(
 	role domain.ReviewRole,
 	isAnonymous bool,
 ) (*domain.Review, error) {
-	// Check if review already exists for this order
 	existing, err := s.reviewRepo.GetByOrderID(ctx, orderID)
 	if err != nil && err != apperror.ErrNotFound {
 		return nil, err
@@ -83,7 +79,6 @@ func (s *ReviewService) CreateReview(
 		if err := s.reviewRepo.UpsertRatingSummary(ctx, revieweeID, rating); err != nil {
 			return err
 		}
-		_ = s.cache.DeleteRatingSummary(ctx, revieweeID)
 		_ = s.recalcTrustScore(ctx, revieweeID)
 		payload, _ := json.Marshal(&domain.UserReviewCreatedEvent{
 			ReviewerID: reviewerID,
@@ -122,18 +117,7 @@ func (s *ReviewService) ListReviews(ctx context.Context, revieweeID uuid.UUID, l
 }
 
 func (s *ReviewService) GetRatingSummary(ctx context.Context, userID uuid.UUID) (*domain.RatingSummary, error) {
-	cached, err := s.cache.GetRatingSummary(ctx, userID)
-	if err == nil && cached != nil {
-		return cached, nil
-	}
-
-	summary, err := s.reviewRepo.GetRatingSummary(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	_ = s.cache.SetRatingSummary(ctx, userID, summary)
-	return summary, nil
+	return s.reviewRepo.GetRatingSummary(ctx, userID)
 }
 
 func (s *ReviewService) recalcTrustScore(ctx context.Context, userID uuid.UUID) error {
@@ -161,7 +145,6 @@ func (s *ReviewService) recalcTrustScore(ctx context.Context, userID uuid.UUID) 
 	accountAgeMonths := time.Since(user.CreatedAt).Hours() / 24 / 30
 	totalReviews := float64(summary.TotalReviews)
 
-	// Trust score formula
 	score := (summary.AvgRating*0.4 +
 		kycVerified*1.0 +
 		math.Min(totalReviews/50, 1)*0.5 +

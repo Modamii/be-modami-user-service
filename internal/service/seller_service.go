@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	apperror "be-modami-user-service/internal/apperror"
 	"be-modami-user-service/internal/domain"
 	"be-modami-user-service/internal/dto"
 	"be-modami-user-service/internal/port"
+	apperror "be-modami-user-service/pkg/apperror"
 
 	"github.com/google/uuid"
 )
@@ -15,18 +15,15 @@ import (
 type SellerService struct {
 	sellerRepo port.SellerProfileRepository
 	userRepo   port.UserRepository
-	cache      port.CacheService
 }
 
 func NewSellerService(
 	sellerRepo port.SellerProfileRepository,
 	userRepo port.UserRepository,
-	cache port.CacheService,
 ) *SellerService {
 	return &SellerService{
 		sellerRepo: sellerRepo,
 		userRepo:   userRepo,
-		cache:      cache,
 	}
 }
 
@@ -100,16 +97,10 @@ func (s *SellerService) UpdateProfile(ctx context.Context, userID uuid.UUID, req
 		return nil, err
 	}
 
-	_ = s.cache.DeleteSellerProfile(ctx, userID)
 	return profile, nil
 }
 
 func (s *SellerService) GetShopProfile(ctx context.Context, userID uuid.UUID) (*domain.SellerProfile, error) {
-	cached, err := s.cache.GetSellerProfile(ctx, userID)
-	if err == nil && cached != nil {
-		return cached, nil
-	}
-
 	profile, err := s.sellerRepo.GetByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -117,7 +108,5 @@ func (s *SellerService) GetShopProfile(ctx context.Context, userID uuid.UUID) (*
 	if profile == nil {
 		return nil, apperror.ErrSellerNotFound
 	}
-
-	_ = s.cache.SetSellerProfile(ctx, userID, profile)
 	return profile, nil
 }

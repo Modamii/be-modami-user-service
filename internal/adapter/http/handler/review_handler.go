@@ -3,7 +3,7 @@ package handler
 import (
 	"strconv"
 
-	"be-modami-user-service/internal/adapter/handler/middleware"
+	"be-modami-user-service/internal/adapter/http/middleware"
 	"be-modami-user-service/internal/domain"
 	"be-modami-user-service/internal/dto"
 	"be-modami-user-service/internal/service"

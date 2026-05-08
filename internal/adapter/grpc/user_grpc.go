@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	apperror "be-modami-user-service/internal/apperror"
 	"be-modami-user-service/internal/service"
+	apperror "be-modami-user-service/pkg/apperror"
 
 	"github.com/google/uuid"
 	pb "gitlab.com/lifegoeson-libs/pkg-techinsights-grpc-client/go/modami/user"

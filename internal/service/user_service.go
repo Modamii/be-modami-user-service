@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	apperror "be-modami-user-service/internal/apperror"
 	"be-modami-user-service/internal/domain"
 	"be-modami-user-service/internal/dto"
 	"be-modami-user-service/internal/port"
+	apperror "be-modami-user-service/pkg/apperror"
 	"be-modami-user-service/pkg/pagination"
 
 	"github.com/google/uuid"
@@ -17,7 +17,6 @@ import (
 
 type UserService struct {
 	userRepo   port.UserRepository
-	cache      port.CacheService
 	txManager  port.TxManager
 	outboxRepo port.OutboxRepository
 	topic      string
@@ -25,14 +24,12 @@ type UserService struct {
 
 func NewUserService(
 	userRepo port.UserRepository,
-	cache port.CacheService,
 	txManager port.TxManager,
 	outboxRepo port.OutboxRepository,
 	topic string,
 ) *UserService {
 	return &UserService{
 		userRepo:   userRepo,
-		cache:      cache,
 		txManager:  txManager,
 		outboxRepo: outboxRepo,
 		topic:      topic,
@@ -40,19 +37,7 @@ func NewUserService(
 }
 
 func (s *UserService) GetProfile(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
-	// Cache-aside pattern
-	cached, err := s.cache.GetProfile(ctx, userID)
-	if err == nil && cached != nil {
-		return cached, nil
-	}
-
-	user, err := s.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	_ = s.cache.SetProfile(ctx, user)
-	return user, nil
+	return s.userRepo.GetByID(ctx, userID)
 }
 
 func (s *UserService) GetMyProfile(ctx context.Context, keycloakID string) (*domain.User, error) {
@@ -96,7 +81,6 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID uuid.UUID, req d
 		if err := s.userRepo.Update(ctx, user); err != nil {
 			return err
 		}
-		_ = s.cache.DeleteProfile(ctx, userID)
 		if len(changedFields) > 0 {
 			payload, _ := json.Marshal(&domain.UserUpdatedEvent{UserID: userID, ChangedFields: changedFields})
 			return s.outboxRepo.Create(ctx, s.topic, userID.String(), payload)
@@ -115,11 +99,7 @@ func (s *UserService) UpdateAvatar(ctx context.Context, userID uuid.UUID, avatar
 		return err
 	}
 	user.AvatarURL = avatarURL
-	if err := s.userRepo.Update(ctx, user); err != nil {
-		return err
-	}
-	_ = s.cache.DeleteProfile(ctx, userID)
-	return nil
+	return s.userRepo.Update(ctx, user)
 }
 
 func (s *UserService) UpdateCover(ctx context.Context, userID uuid.UUID, coverURL string) error {
@@ -128,19 +108,11 @@ func (s *UserService) UpdateCover(ctx context.Context, userID uuid.UUID, coverUR
 		return err
 	}
 	user.CoverURL = coverURL
-	if err := s.userRepo.Update(ctx, user); err != nil {
-		return err
-	}
-	_ = s.cache.DeleteProfile(ctx, userID)
-	return nil
+	return s.userRepo.Update(ctx, user)
 }
 
 func (s *UserService) DeactivateAccount(ctx context.Context, userID uuid.UUID) error {
-	if err := s.userRepo.SoftDelete(ctx, userID); err != nil {
-		return err
-	}
-	_ = s.cache.DeleteProfile(ctx, userID)
-	return nil
+	return s.userRepo.SoftDelete(ctx, userID)
 }
 
 func (s *UserService) SearchUsers(ctx context.Context, query string, limit int, cursorStr string) ([]*domain.User, string, error) {
@@ -172,7 +144,6 @@ func (s *UserService) UpdateStatus(ctx context.Context, userID uuid.UUID, status
 		if err := s.userRepo.UpdateStatus(ctx, userID, status); err != nil {
 			return err
 		}
-		_ = s.cache.DeleteProfile(ctx, userID)
 		if status == domain.UserStatusSuspended {
 			payload, _ := json.Marshal(&domain.UserSuspendedEvent{UserID: userID, Reason: reason, SuspendedAt: time.Now()})
 			return s.outboxRepo.Create(ctx, s.topic, userID.String(), payload)
@@ -265,11 +236,7 @@ func (s *UserService) SyncFromAuthUpdate(ctx context.Context, event *domain.Auth
 		user.FullName = strings.TrimSpace(*firstName + " " + *lastName)
 	}
 
-	if err := s.userRepo.Update(ctx, user); err != nil {
-		return err
-	}
-	_ = s.cache.DeleteProfile(ctx, user.ID)
-	return nil
+	return s.userRepo.Update(ctx, user)
 }
 
 func (s *UserService) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {

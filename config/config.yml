@@ -42,8 +42,8 @@ redis:
   rate_limit_database: 5
   ttl: 259200s
   pool_size: 100
-  pass: "password"
-  user_name: "username"
+  pass: redis_password
+  user_name: ""
   write_timeout: 600s
   read_timeout: 600s
   dial_timeout: 600s
