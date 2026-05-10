@@ -31,7 +31,8 @@
       "Bash(printenv:*)",
       "Bash(go run:*)",
       "Bash(make build:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(chmod:*)"
     ]
   }
 }
