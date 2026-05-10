@@ -6,7 +6,26 @@ import (
 	"github.com/google/uuid"
 )
 
-// Consumed events (from auth service)
+// Outbox aggregate types. Each maps to a Kafka topic via Debezium EventRouter:
+// aggregate_type + ".events" → Kafka topic  (e.g. "user" → "user.events").
+const (
+	OutboxAggregateUser   = "user"
+	OutboxAggregateFollow = "follow"
+	OutboxAggregateReview = "review"
+	OutboxAggregateKYC    = "kyc"
+)
+
+// Outbox event types carried in the Kafka message header after Debezium routing.
+const (
+	OutboxEventUserProfileCreated = "UserProfileCreated"
+	OutboxEventUserUpdated        = "UserUpdated"
+	OutboxEventUserSuspended      = "UserSuspended"
+	OutboxEventUserRoleUpgraded   = "UserRoleUpgraded"
+	OutboxEventUserFollowed       = "UserFollowed"
+	OutboxEventUserUnfollowed     = "UserUnfollowed"
+	OutboxEventUserReviewCreated  = "UserReviewCreated"
+)
+
 type AuthUserCreatedEvent struct {
 	Type      string    `json:"type"`
 	Timestamp time.Time `json:"timestamp"`

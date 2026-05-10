@@ -164,6 +164,22 @@ func (r *userRepo) scanUsers(rows pgx.Rows) ([]*domain.User, error) {
 	return users, rows.Err()
 }
 
+func (r *userRepo) UpdateKeycloakSyncFields(ctx context.Context, userID uuid.UUID, fields domain.KeycloakSyncFields) error {
+	query := `
+		UPDATE users SET email=$1, username=$2, email_verified=$3, status=$4, updated_at=$5
+		WHERE id=$6 AND deleted_at IS NULL`
+	ct, err := dbFromCtx(ctx, r.db).Exec(ctx, query,
+		fields.Email, fields.Username, fields.EmailVerified, fields.Status, time.Now(), userID,
+	)
+	if err != nil {
+		return err
+	}
+	if ct.RowsAffected() == 0 {
+		return apperror.ErrNotFound
+	}
+	return nil
+}
+
 func (r *userRepo) UpdateTrustScore(ctx context.Context, userID uuid.UUID, score float64) error {
 	_, err := dbFromCtx(ctx, r.db).Exec(ctx,
 		`UPDATE users SET trust_score=$1, updated_at=$2 WHERE id=$3`,

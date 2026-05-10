@@ -19,7 +19,6 @@ type KYCService struct {
 	userRepo   port.UserRepository
 	txManager  port.TxManager
 	outboxRepo port.OutboxRepository
-	topic      string
 }
 
 func NewKYCService(
@@ -28,7 +27,6 @@ func NewKYCService(
 	userRepo port.UserRepository,
 	txManager port.TxManager,
 	outboxRepo port.OutboxRepository,
-	topic string,
 ) *KYCService {
 	return &KYCService{
 		kycRepo:    kycRepo,
@@ -36,7 +34,6 @@ func NewKYCService(
 		userRepo:   userRepo,
 		txManager:  txManager,
 		outboxRepo: outboxRepo,
-		topic:      topic,
 	}
 }
 
@@ -118,7 +115,7 @@ func (s *KYCService) ApproveKYC(ctx context.Context, userID, adminID uuid.UUID) 
 			OldRole: oldRole,
 			NewRole: domain.UserRoleSeller,
 		})
-		return s.outboxRepo.Create(ctx, s.topic, userID.String(), payload)
+		return s.outboxRepo.Create(ctx, domain.OutboxAggregateKYC, userID.String(), domain.OutboxEventUserRoleUpgraded, payload)
 	})
 }
 

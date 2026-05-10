@@ -19,20 +19,17 @@ type UserService struct {
 	userRepo   port.UserRepository
 	txManager  port.TxManager
 	outboxRepo port.OutboxRepository
-	topic      string
 }
 
 func NewUserService(
 	userRepo port.UserRepository,
 	txManager port.TxManager,
 	outboxRepo port.OutboxRepository,
-	topic string,
 ) *UserService {
 	return &UserService{
 		userRepo:   userRepo,
 		txManager:  txManager,
 		outboxRepo: outboxRepo,
-		topic:      topic,
 	}
 }
 
@@ -83,7 +80,7 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID uuid.UUID, req d
 		}
 		if len(changedFields) > 0 {
 			payload, _ := json.Marshal(&domain.UserUpdatedEvent{UserID: userID, ChangedFields: changedFields})
-			return s.outboxRepo.Create(ctx, s.topic, userID.String(), payload)
+			return s.outboxRepo.Create(ctx, domain.OutboxAggregateUser, userID.String(), domain.OutboxEventUserUpdated, payload)
 		}
 		return nil
 	}); err != nil {
@@ -146,7 +143,7 @@ func (s *UserService) UpdateStatus(ctx context.Context, userID uuid.UUID, status
 		}
 		if status == domain.UserStatusSuspended {
 			payload, _ := json.Marshal(&domain.UserSuspendedEvent{UserID: userID, Reason: reason, SuspendedAt: time.Now()})
-			return s.outboxRepo.Create(ctx, s.topic, userID.String(), payload)
+			return s.outboxRepo.Create(ctx, domain.OutboxAggregateUser, userID.String(), domain.OutboxEventUserSuspended, payload)
 		}
 		return nil
 	})
@@ -211,7 +208,7 @@ func (s *UserService) CreateFromEvent(ctx context.Context, event *domain.AuthUse
 		if err := s.userRepo.Create(ctx, user); err != nil {
 			return err
 		}
-		return s.outboxRepo.Create(ctx, s.topic, user.ID.String(), outboxPayload)
+		return s.outboxRepo.Create(ctx, domain.OutboxAggregateUser, user.ID.String(), domain.OutboxEventUserProfileCreated, outboxPayload)
 	})
 }
 
@@ -237,6 +234,125 @@ func (s *UserService) SyncFromAuthUpdate(ctx context.Context, event *domain.Auth
 	}
 
 	return s.userRepo.Update(ctx, user)
+}
+
+// SyncFromKeycloakCDC dispatches a Debezium CDC event for the Keycloak
+// user_entity table to the appropriate handler based on the operation type.
+func (s *UserService) SyncFromKeycloakCDC(ctx context.Context, event *domain.KeycloakCDCEvent) error {
+	switch event.Op {
+	case domain.KeycloakCDCOpCreate, domain.KeycloakCDCOpSnapshot:
+		if event.After == nil || event.After.IsServiceAccount() {
+			return nil
+		}
+		return s.createOrSkipFromCDC(ctx, event.After)
+	case domain.KeycloakCDCOpUpdate:
+		if event.After == nil || event.After.IsServiceAccount() {
+			return nil
+		}
+		return s.updateFromCDC(ctx, event)
+	case domain.KeycloakCDCOpDelete:
+		if event.Before == nil {
+			return nil
+		}
+		return s.SoftDeleteByKeycloakID(ctx, event.Before.ID)
+	}
+	return nil
+}
+
+// createOrSkipFromCDC maps a KeycloakUserEntity to an AuthUserCreatedEvent and
+// delegates to the existing CreateFromEvent logic (which is idempotent).
+func (s *UserService) createOrSkipFromCDC(ctx context.Context, entity *domain.KeycloakUserEntity) error {
+	authEvt := &domain.AuthUserCreatedEvent{
+		UserID:    entity.ID,
+		Timestamp: time.Now(),
+	}
+	if entity.Email != nil && *entity.Email != "" {
+		authEvt.Email = *entity.Email
+	}
+	if entity.Username != nil {
+		authEvt.Username = *entity.Username
+	}
+	if entity.FirstName != nil {
+		authEvt.FirstName = *entity.FirstName
+	}
+	if entity.LastName != nil {
+		authEvt.LastName = *entity.LastName
+	}
+	if err := s.CreateFromEvent(ctx, authEvt); err != nil {
+		return err
+	}
+	if entity.EmailVerified {
+		return s.MarkEmailVerified(ctx, entity.ID)
+	}
+	return nil
+}
+
+// updateFromCDC applies changed fields from a CDC update event to the local
+// user record. If the user does not exist yet it falls back to createOrSkipFromCDC.
+func (s *UserService) updateFromCDC(ctx context.Context, event *domain.KeycloakCDCEvent) error {
+	entity := event.After
+
+	diff := event.DetectChanges()
+	if !diff.HasAny() {
+		return nil
+	}
+
+	user, err := s.userRepo.GetByKeycloakID(ctx, entity.ID)
+	if err != nil {
+		if err == apperror.ErrNotFound {
+			return s.createOrSkipFromCDC(ctx, entity)
+		}
+		return err
+	}
+
+	// Build sync fields starting from the current DB values so that fields not
+	// changed in this event are preserved unchanged.
+	syncFields := domain.KeycloakSyncFields{
+		Email:         user.Email,
+		Username:      user.UserName,
+		EmailVerified: user.EmailVerified,
+		Status:        user.Status,
+	}
+
+	if diff.Email && entity.Email != nil && *entity.Email != "" {
+		syncFields.Email = *entity.Email
+	}
+	if diff.Username && entity.Username != nil && *entity.Username != "" {
+		syncFields.Username = *entity.Username
+	}
+	if diff.FirstName || diff.LastName {
+		firstName := ""
+		if entity.FirstName != nil {
+			firstName = *entity.FirstName
+		}
+		lastName := ""
+		if entity.LastName != nil {
+			lastName = *entity.LastName
+		}
+		if fullName := strings.TrimSpace(firstName + " " + lastName); fullName != "" {
+			user.FullName = fullName
+		}
+	}
+	if diff.EmailVerified {
+		syncFields.EmailVerified = entity.EmailVerified
+	}
+	// Mirror Keycloak enabled flag → active/inactive; never override suspended/banned.
+	if diff.Enabled {
+		if !entity.Enabled && user.Status == domain.UserStatusActive {
+			syncFields.Status = domain.UserStatusInactive
+		} else if entity.Enabled && user.Status == domain.UserStatusInactive {
+			syncFields.Status = domain.UserStatusActive
+		}
+	}
+
+	if err := s.userRepo.UpdateKeycloakSyncFields(ctx, user.ID, syncFields); err != nil {
+		return err
+	}
+	// Update profile fields (full_name) if name changed.
+	if diff.FirstName || diff.LastName {
+		return s.userRepo.Update(ctx, user)
+	}
+	return nil
 }
 
 func (s *UserService) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {

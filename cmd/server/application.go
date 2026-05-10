@@ -1,11 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"net/http"
-	"time"
-
 	"be-modami-user-service/config"
 	_ "be-modami-user-service/docs"
 	grpcadapter "be-modami-user-service/internal/adapter/grpc"
@@ -13,14 +8,16 @@ import (
 	"be-modami-user-service/internal/adapter/http/middleware"
 	"be-modami-user-service/internal/adapter/messaging"
 	"be-modami-user-service/internal/adapter/repository"
-	"be-modami-user-service/internal/port"
 	"be-modami-user-service/internal/service"
-	pkgkafka "be-modami-user-service/pkg/kafka"
+	"context"
+	"net/http"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	gokitkafka "gitlab.com/lifegoeson-libs/pkg-gokit/kafka"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 	loggingmw "gitlab.com/lifegoeson-libs/pkg-logging/middleware"
@@ -29,15 +26,13 @@ import (
 )
 
 type Application struct {
-	HTTPServer *http.Server
-	GRPCServer *grpc.Server
-	Publisher  port.EventPublisher
-	Consumer   *messaging.Consumer
-	OutboxRepo port.OutboxRepository
+	HTTPServer    *http.Server
+	GRPCServer    *grpc.Server
+	KafkaHandlers []gokitkafka.ConsumerHandler
 }
 
 func newApplication(ctx context.Context, cfg *config.Config, conns *Connections) (*Application, error) {
-	// repositories 
+	// repositories
 	userRepo := repository.NewCachedUserRepository(repository.NewUserRepository(conns.DB), conns.Redis)
 	sellerRepo := repository.NewCachedSellerRepository(repository.NewSellerProfileRepository(conns.DB), conns.Redis)
 	followRepo := repository.NewCachedFollowRepository(repository.NewFollowRepository(conns.DB), conns.Redis)
@@ -45,45 +40,16 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	addressRepo := repository.NewCachedAddressRepository(repository.NewAddressRepository(conns.DB), conns.Redis)
 	kycRepo := repository.NewKYCRepository(conns.DB)
 	outboxRepo := repository.NewOutboxRepository(conns.DB)
-	processedEventRepo := repository.NewProcessedEventRepository(conns.DB)
-
+	processedRepo := repository.NewProcessedEventRepository(conns.DB)
 	txManager := repository.NewTxManager(conns.DB)
-	publisher, err := messaging.NewKafkaProducer(
-		cfg.Kafka.Brokers(),
-		cfg.Kafka.Env,
-		cfg.Kafka.ClientID,
-		outboxRepo,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("create kafka producer: %w", err)
-	}
-
-	eventsTopic := pkgkafka.GetTopicWithEnv(cfg.Kafka.Env, pkgkafka.TopicUserEvents)
 
 	// services
-	userService := service.NewUserService(userRepo, txManager, outboxRepo, eventsTopic)
-	followService := service.NewFollowService(followRepo, txManager, outboxRepo, eventsTopic)
-	reviewService := service.NewReviewService(reviewRepo, userRepo, sellerRepo, txManager, outboxRepo, eventsTopic)
+	userService := service.NewUserService(userRepo, txManager, outboxRepo)
+	followService := service.NewFollowService(followRepo, txManager, outboxRepo)
+	reviewService := service.NewReviewService(reviewRepo, userRepo, sellerRepo, txManager, outboxRepo)
+	kycService := service.NewKYCService(kycRepo, sellerRepo, userRepo, txManager, outboxRepo)
 	addressService := service.NewAddressService(addressRepo)
 	sellerService := service.NewSellerService(sellerRepo, userRepo)
-	kycService := service.NewKYCService(kycRepo, sellerRepo, userRepo, txManager, outboxRepo, eventsTopic)
-
-	consumer, err := messaging.NewConsumer(
-		cfg.Kafka.Brokers(),
-		cfg.Kafka.ConsumerGroup,
-		cfg.Kafka.Env,
-		cfg.Kafka.ClientID,
-		processedEventRepo,
-		userService,
-	)
-	if err != nil {
-		publisher.Close()
-		return nil, fmt.Errorf("create kafka consumer: %w", err)
-	}
-	authMiddleware, authErr := middleware.NewAuthMiddleware(cfg.Keycloak.JWKSURL, userService)
-	if authErr != nil {
-		logger.Warn(ctx, "auth middleware init warning", logging.String("error", authErr.Error()))
-	}
 
 	// handlers
 	userHandler := handler.NewUserHandler(userService)
@@ -93,12 +59,16 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	sellerHandler := handler.NewSellerHandler(sellerService, kycService)
 	adminHandler := handler.NewAdminHandler(userService, kycService)
 
+	authMiddleware, authErr := middleware.NewAuthMiddleware(cfg.Keycloak.JWKSURL, userService)
+	if authErr != nil {
+		logger.Warn(ctx, "auth middleware init warning", logging.String("error", authErr.Error()))
+	}
+
 	// global middleware
 	if cfg.Observability.LogLevel != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	router := gin.New()
-	router.Use(middleware.Logger())
 	router.Use(middleware.RateLimit())
 	router.Use(gin.Recovery())
 	router.Use(cors.New(cors.Config{
@@ -131,9 +101,9 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	return &Application{
 		HTTPServer: httpServer,
 		GRPCServer: grpcServer,
-		Publisher:  publisher,
-		Consumer:   consumer,
-		OutboxRepo: outboxRepo,
+		KafkaHandlers: []gokitkafka.ConsumerHandler{
+			messaging.NewKeycloakCDCHandler(userService, processedRepo),
+		},
 	}, nil
 }
 
@@ -197,33 +167,3 @@ func registerRoutes(
 	adminGroup.GET("/users", adminHandler.ListUsers)
 }
 
-func runOutboxWorker(ctx context.Context, outboxRepo port.OutboxRepository, publisher port.EventPublisher) {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			processOutboxEvents(ctx, outboxRepo, publisher)
-		}
-	}
-}
-
-func processOutboxEvents(ctx context.Context, outboxRepo port.OutboxRepository, publisher port.EventPublisher) {
-	events, err := outboxRepo.GetPending(ctx, 50)
-	if err != nil {
-		logger.Error(ctx, "outbox: get pending error", err)
-		return
-	}
-	for _, event := range events {
-		if err := publisher.PublishRaw(ctx, event.Topic, event.Key, event.Payload); err != nil {
-			logger.Error(ctx, "outbox: publish failed", err, logging.String("id", event.ID.String()))
-			_ = outboxRepo.MarkFailed(ctx, event.ID)
-			continue
-		}
-		if err := outboxRepo.MarkSent(ctx, event.ID); err != nil {
-			logger.Error(ctx, "outbox: mark sent failed", err, logging.String("id", event.ID.String()))
-		}
-	}
-}

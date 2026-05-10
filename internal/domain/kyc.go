@@ -20,11 +20,10 @@ type KYCDocument struct {
 }
 
 type OutboxEvent struct {
-	ID        uuid.UUID  `json:"id"`
-	Topic     string     `json:"topic"`
-	Key       string     `json:"key"`
-	Payload   []byte     `json:"payload"`
-	Status    string     `json:"status"`
-	CreatedAt time.Time  `json:"created_at"`
-	SentAt    *time.Time `json:"sent_at,omitempty"`
+	ID            uuid.UUID `json:"id"`
+	AggregateType string    `json:"aggregate_type"`
+	AggregateID   string    `json:"aggregate_id"`
+	EventType     string    `json:"event_type"`
+	Payload       []byte    `json:"payload"`
+	CreatedAt     time.Time `json:"created_at"`
 }

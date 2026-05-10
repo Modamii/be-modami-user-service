@@ -80,6 +80,14 @@ func (r *cachedUserRepo) Search(ctx context.Context, query string, limit int, cu
 	return r.inner.Search(ctx, query, limit, cursor)
 }
 
+func (r *cachedUserRepo) UpdateKeycloakSyncFields(ctx context.Context, userID uuid.UUID, fields domain.KeycloakSyncFields) error {
+	err := r.inner.UpdateKeycloakSyncFields(ctx, userID, fields)
+	if err == nil && r.cache != nil {
+		_ = r.cache.Delete(ctx, r.profileKey(userID))
+	}
+	return err
+}
+
 func (r *cachedUserRepo) UpdateTrustScore(ctx context.Context, userID uuid.UUID, score float64) error {
 	return r.inner.UpdateTrustScore(ctx, userID, score)
 }

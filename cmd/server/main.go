@@ -66,20 +66,6 @@ func main() {
 		logger.Error(ctx, "failed to build application", err)
 		os.Exit(1)
 	}
-	defer app.Consumer.Close()
-
-	workerCtx, cancelWorkers := context.WithCancel(ctx)
-	defer cancelWorkers()
-
-	go func() {
-		logger.Info(ctx, "starting kafka consumer")
-		app.Consumer.Start(workerCtx)
-	}()
-
-	go func() {
-		logger.Info(ctx, "starting outbox worker")
-		runOutboxWorker(workerCtx, app.OutboxRepo, app.Publisher)
-	}()
 
 	go func() {
 		lis, lisErr := net.Listen("tcp", fmt.Sprintf(":%s", cfg.GRPC.Port))
@@ -100,12 +86,20 @@ func main() {
 		}
 	}()
 
+	if conns.KafkaConsumer != nil {
+		go func() {
+			logger.Info(ctx, "kafka consumer starting")
+			if err := conns.KafkaConsumer.StartConsumer(ctx, app.KafkaHandlers); err != nil {
+				logger.Error(ctx, "kafka consumer error", err)
+			}
+		}()
+	}
+ 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<-quit
 
 	logger.Info(ctx, "shutting down...")
-	cancelWorkers()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

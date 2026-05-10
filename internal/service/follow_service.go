@@ -17,20 +17,17 @@ type FollowService struct {
 	followRepo port.FollowRepository
 	txManager  port.TxManager
 	outboxRepo port.OutboxRepository
-	topic      string
 }
 
 func NewFollowService(
 	followRepo port.FollowRepository,
 	txManager port.TxManager,
 	outboxRepo port.OutboxRepository,
-	topic string,
 ) *FollowService {
 	return &FollowService{
 		followRepo: followRepo,
 		txManager:  txManager,
 		outboxRepo: outboxRepo,
-		topic:      topic,
 	}
 }
 
@@ -59,7 +56,7 @@ func (s *FollowService) Follow(ctx context.Context, followerID, followingID uuid
 		if err := s.followRepo.Follow(ctx, followerID, followingID); err != nil {
 			return err
 		}
-		return s.outboxRepo.Create(ctx, s.topic, followerID.String(), payload)
+		return s.outboxRepo.Create(ctx, domain.OutboxAggregateFollow, followerID.String(), domain.OutboxEventUserFollowed, payload)
 	})
 }
 
@@ -80,7 +77,7 @@ func (s *FollowService) Unfollow(ctx context.Context, followerID, followingID uu
 		if err := s.followRepo.Unfollow(ctx, followerID, followingID); err != nil {
 			return err
 		}
-		return s.outboxRepo.Create(ctx, s.topic, followerID.String(), payload)
+		return s.outboxRepo.Create(ctx, domain.OutboxAggregateFollow, followerID.String(), domain.OutboxEventUserUnfollowed, payload)
 	})
 }
 

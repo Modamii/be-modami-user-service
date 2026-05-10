@@ -20,7 +20,6 @@ type ReviewService struct {
 	sellerRepo port.SellerProfileRepository
 	txManager  port.TxManager
 	outboxRepo port.OutboxRepository
-	topic      string
 }
 
 func NewReviewService(
@@ -29,7 +28,6 @@ func NewReviewService(
 	sellerRepo port.SellerProfileRepository,
 	txManager port.TxManager,
 	outboxRepo port.OutboxRepository,
-	topic string,
 ) *ReviewService {
 	return &ReviewService{
 		reviewRepo: reviewRepo,
@@ -37,7 +35,6 @@ func NewReviewService(
 		sellerRepo: sellerRepo,
 		txManager:  txManager,
 		outboxRepo: outboxRepo,
-		topic:      topic,
 	}
 }
 
@@ -86,7 +83,7 @@ func (s *ReviewService) CreateReview(
 			OrderID:    orderID,
 			Rating:     rating,
 		})
-		return s.outboxRepo.Create(ctx, s.topic, reviewerID.String(), payload)
+		return s.outboxRepo.Create(ctx, domain.OutboxAggregateReview, reviewerID.String(), domain.OutboxEventUserReviewCreated, payload)
 	}); err != nil {
 		return nil, err
 	}

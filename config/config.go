@@ -177,6 +177,20 @@ type ObservabilityConfig struct {
 	OTLPInsecure   bool   `mapstructure:"otlp_insecure"`
 }
 
+func (k KafkaConfig) GetBrokers() []string {
+	if k.BrokerList == "" {
+		return nil
+	}
+	brokers := strings.Split(k.BrokerList, ",")
+	result := make([]string, 0, len(brokers))
+	for _, b := range brokers {
+		if trimmed := strings.TrimSpace(b); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
+}
+
 func Load() (*Config, error) {
 	v := viper.New()
 
@@ -185,31 +199,6 @@ func Load() (*Config, error) {
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config")
-
-	// Defaults
-	v.SetDefault("app.name", "be-modami-user-service")
-	v.SetDefault("app.version", "1.0.0")
-	v.SetDefault("app.environment", "local")
-	v.SetDefault("app.debug", false)
-	v.SetDefault("app.port", 8086)
-	v.SetDefault("app.host", "0.0.0.0")
-	v.SetDefault("app.swagger_host", "localhost:8086")
-	v.SetDefault("app.shutdown_timeout", "30s")
-	v.SetDefault("app.read_timeout", "30s")
-	v.SetDefault("app.write_timeout", "30s")
-	v.SetDefault("app.idle_timeout", "120s")
-	v.SetDefault("app.allow_credentials", true)
-	v.SetDefault("app.allowed_origins", []string{
-		"http://localhost:5173",
-		"http://localhost:3000",
-		"http://localhost:8080",
-		"http://localhost:8081",
-	})
-	v.SetDefault("postgres.max_idle_conns", 5)
-	v.SetDefault("postgres.max_active_conns", 25)
-	v.SetDefault("postgres.sslmode", "disable")
-	v.SetDefault("log.level", "info")
-	v.SetDefault("log.format", "json")
 
 	// Read config.yml
 	if err := v.ReadInConfig(); err != nil {

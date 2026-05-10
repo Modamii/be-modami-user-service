@@ -17,6 +17,7 @@ type UserRepository interface {
 	Update(ctx context.Context, user *domain.User) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 	Search(ctx context.Context, query string, limit int, cursor *time.Time) ([]*domain.User, error)
+	UpdateKeycloakSyncFields(ctx context.Context, userID uuid.UUID, fields domain.KeycloakSyncFields) error
 	UpdateTrustScore(ctx context.Context, userID uuid.UUID, score float64) error
 	UpdateRole(ctx context.Context, userID uuid.UUID, role domain.UserRole) error
 	UpdateStatus(ctx context.Context, userID uuid.UUID, status domain.UserStatus) error
@@ -65,10 +66,8 @@ type KYCRepository interface {
 }
 
 type OutboxRepository interface {
-	Create(ctx context.Context, topic, key string, payload []byte) error
-	GetPending(ctx context.Context, limit int) ([]*domain.OutboxEvent, error)
-	MarkSent(ctx context.Context, id uuid.UUID) error
-	MarkFailed(ctx context.Context, id uuid.UUID) error
+	Create(ctx context.Context, aggregateType, aggregateID, eventType string, payload []byte) error
+	Cleanup(ctx context.Context, olderThan time.Duration) error
 }
 
 type ProcessedEventRepository interface {

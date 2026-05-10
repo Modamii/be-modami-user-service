@@ -30,7 +30,8 @@
       "Bash(ls:*)",
       "Bash(printenv:*)",
       "Bash(go run:*)",
-      "Bash(make build:*)"
+      "Bash(make build:*)",
+      "Bash(curl:*)"
     ]
   }
 }

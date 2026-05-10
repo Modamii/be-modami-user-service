@@ -1,4 +1,4 @@
-.PHONY: build run test migrate-up migrate-down migrate-down-one migrate-force migrate-version migrate-create swagger proto docker-up docker-down lint tidy
+.PHONY: build run test migrate-up migrate-down migrate-down-one migrate-force migrate-version migrate-create swagger proto docker-up docker-down debezium-register debezium-status debezium-delete lint tidy
 
 # Build only our service packages (exclude pre-existing pkg/kafka from other projects)
 PKGS := $(shell go list ./... | grep -v 'pkg/kafka')
@@ -51,6 +51,17 @@ docker-up:
 
 docker-down:
 	docker-compose down
+
+debezium-register:
+	curl -X POST http://localhost:8083/connectors \
+	  -H "Content-Type: application/json" \
+	  -d @debezium/outbox-connector.json
+
+debezium-status:
+	curl -s http://localhost:8083/connectors/user-service-outbox-connector/status | jq .
+
+debezium-delete:
+	curl -X DELETE http://localhost:8083/connectors/user-service-outbox-connector
 
 lint:
 	golangci-lint run
