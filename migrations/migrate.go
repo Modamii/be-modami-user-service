@@ -2,33 +2,36 @@ package migrations
 
 import (
 	"context"
-	"errors"
+	"database/sql"
+	"fmt"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
 	logging "gitlab.com/lifegoeson-libs/pkg-logging"
 	"gitlab.com/lifegoeson-libs/pkg-logging/logger"
 )
 
 func RunMigrations(ctx context.Context, dsn string) error {
-	d, err := iofs.New(Files, ".")
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		return err
+		return fmt.Errorf("open db: %w", err)
+	}
+	defer db.Close()
+
+	goose.SetBaseFS(Files)
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		return fmt.Errorf("goose set dialect: %w", err)
 	}
 
-	m, err := migrate.NewWithSourceInstance("iofs", d, dsn)
-	if err != nil {
-		return err
-	}
-	defer m.Close()
-
-	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return err
+	if err := goose.UpContext(ctx, db, "."); err != nil {
+		return fmt.Errorf("goose up: %w", err)
 	}
 
-	version, _, _ := m.Version()
-	logger.Info(ctx, "migrations applied", logging.Int("version", int(version)))
+	version, err := goose.GetDBVersionContext(ctx, db)
+	if err == nil {
+		logger.Info(ctx, "migrations applied", logging.Int("version", int(version)))
+	}
+
 	return nil
 }

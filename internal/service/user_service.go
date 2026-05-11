@@ -237,7 +237,6 @@ func (s *UserService) SyncFromAuthUpdate(ctx context.Context, event *domain.Auth
 }
 
 // SyncFromKeycloakCDC dispatches a Debezium CDC event for the Keycloak
-// user_entity table to the appropriate handler based on the operation type.
 func (s *UserService) SyncFromKeycloakCDC(ctx context.Context, event *domain.KeycloakCDCEvent) error {
 	switch event.Op {
 	case domain.KeycloakCDCOpCreate, domain.KeycloakCDCOpSnapshot:
@@ -259,8 +258,6 @@ func (s *UserService) SyncFromKeycloakCDC(ctx context.Context, event *domain.Key
 	return nil
 }
 
-// createOrSkipFromCDC maps a KeycloakUserEntity to an AuthUserCreatedEvent and
-// delegates to the existing CreateFromEvent logic (which is idempotent).
 func (s *UserService) createOrSkipFromCDC(ctx context.Context, entity *domain.KeycloakUserEntity) error {
 	authEvt := &domain.AuthUserCreatedEvent{
 		UserID:    entity.ID,
@@ -287,8 +284,6 @@ func (s *UserService) createOrSkipFromCDC(ctx context.Context, entity *domain.Ke
 	return nil
 }
 
-// updateFromCDC applies changed fields from a CDC update event to the local
-// user record. If the user does not exist yet it falls back to createOrSkipFromCDC.
 func (s *UserService) updateFromCDC(ctx context.Context, event *domain.KeycloakCDCEvent) error {
 	entity := event.After
 

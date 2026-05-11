@@ -1,3 +1,4 @@
+-- +goose Up
 -- Enable extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
@@ -171,3 +172,26 @@ CREATE TABLE processed_events (
 );
 
 CREATE INDEX idx_processed_events_processed_at ON processed_events(processed_at);
+
+-- +goose Down
+DROP TABLE IF EXISTS processed_events;
+DROP TABLE IF EXISTS outbox_events;
+DROP TABLE IF EXISTS kyc_documents;
+DROP TABLE IF EXISTS rating_summaries;
+DROP TABLE IF EXISTS reviews;
+DROP TABLE IF EXISTS user_follows;
+DROP TABLE IF EXISTS addresses;
+DROP TABLE IF EXISTS seller_profiles;
+DROP TABLE IF EXISTS users;
+
+DROP TYPE IF EXISTS review_role;
+DROP TYPE IF EXISTS business_type;
+DROP TYPE IF EXISTS kyc_doc_status;
+DROP TYPE IF EXISTS kyc_doc_type;
+DROP TYPE IF EXISTS kyc_status;
+DROP TYPE IF EXISTS gender_type;
+DROP TYPE IF EXISTS user_status;
+DROP TYPE IF EXISTS user_role;
+
+DROP EXTENSION IF EXISTS pg_trgm;
+DROP EXTENSION IF EXISTS "uuid-ossp";
