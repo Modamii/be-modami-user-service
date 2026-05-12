@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	gokitkafka "gitlab.com/lifegoeson-libs/pkg-gokit/kafka"
@@ -70,16 +71,16 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 	}
 	router := gin.New()
 	router.Use(middleware.RateLimit())
-	router.Use(gin.Recovery())
+	router.Use(gin.Recovery())    
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.App.AllowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Accept", "Authorization", "Content-Type", "X-Request-ID"},
 		AllowCredentials: cfg.App.AllowCredentials,
 		MaxAge:           300,
-	}))
+	}))																	
 
-	registerRoutes(router, authMiddleware, userHandler, followHandler, reviewHandler, addressHandler, sellerHandler, adminHandler)
+	registerRoutes(router, conns.DB, authMiddleware, userHandler, followHandler, reviewHandler, addressHandler, sellerHandler, adminHandler)
 
 	grpcServer := grpc.NewServer(
 		grpc.StatsHandler(loggingmw.GRPCStatsHandler()),
@@ -109,6 +110,7 @@ func newApplication(ctx context.Context, cfg *config.Config, conns *Connections)
 
 func registerRoutes(
 	router *gin.Engine,
+	db *pgxpool.Pool,
 	authMiddleware *middleware.AuthMiddleware,
 	userHandler *handler.UserHandler,
 	followHandler *handler.FollowHandler,
@@ -140,8 +142,9 @@ func registerRoutes(
 	auth.PUT("/users/me/cover", userHandler.UpdateCover)
 	auth.DELETE("/users/me", userHandler.DeactivateAccount)
 
-	auth.POST("/users/:id/follow", followHandler.Follow)
-	auth.DELETE("/users/:id/follow", followHandler.Unfollow)
+	tx := middleware.Transaction(db)
+	auth.POST("/users/:id/follow", tx, followHandler.Follow)
+	auth.DELETE("/users/:id/follow", tx, followHandler.Unfollow)
 	auth.GET("/users/:id/follow/status", followHandler.CheckFollowStatus)
 
 	auth.POST("/users/:id/reviews", reviewHandler.CreateReview)
@@ -150,7 +153,7 @@ func registerRoutes(
 	auth.GET("/users/me/addresses", addressHandler.ListAddresses)
 	auth.PUT("/users/me/addresses/:addr_id", addressHandler.UpdateAddress)
 	auth.DELETE("/users/me/addresses/:addr_id", addressHandler.DeleteAddress)
-	auth.PUT("/users/me/addresses/:addr_id/default", addressHandler.SetDefault)
+	auth.PUT("/users/me/addresses/:addr_id/default", tx, addressHandler.SetDefault)
 
 	auth.POST("/users/me/seller/register", sellerHandler.Register)
 	auth.PUT("/users/me/seller/profile", sellerHandler.UpdateProfile)

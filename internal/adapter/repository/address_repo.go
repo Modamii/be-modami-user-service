@@ -112,39 +112,24 @@ func (r *addressRepo) Delete(ctx context.Context, id, userID uuid.UUID) error {
 }
 
 func (r *addressRepo) SetDefault(ctx context.Context, id, userID uuid.UUID) error {
-	run := func(db DBTX) error {
-		_, err := db.Exec(ctx,
-			`UPDATE addresses SET is_default=false, updated_at=$1 WHERE user_id=$2 AND is_default=true`,
-			time.Now(), userID,
-		)
-		if err != nil {
-			return err
-		}
-		ct, err := db.Exec(ctx,
-			`UPDATE addresses SET is_default=true, updated_at=$1 WHERE id=$2 AND user_id=$3`,
-			time.Now(), id, userID,
-		)
-		if err != nil {
-			return err
-		}
-		if ct.RowsAffected() == 0 {
-			return apperror.ErrAddressNotFound
-		}
-		return nil
+	db := dbFromCtx(ctx, r.db)
+	if _, err := db.Exec(ctx,
+		`UPDATE addresses SET is_default=false, updated_at=$1 WHERE user_id=$2 AND is_default=true`,
+		time.Now(), userID,
+	); err != nil {
+		return err
 	}
-
-	if tx, ok := txFromCtx(ctx); ok {
-		return run(tx)
-	}
-	tx, err := r.db.Begin(ctx)
+	ct, err := db.Exec(ctx,
+		`UPDATE addresses SET is_default=true, updated_at=$1 WHERE id=$2 AND user_id=$3`,
+		time.Now(), id, userID,
+	)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
-	if err := run(tx); err != nil {
-		return err
+	if ct.RowsAffected() == 0 {
+		return apperror.ErrAddressNotFound
 	}
-	return tx.Commit(ctx)
+	return nil
 }
 
 func (r *addressRepo) CountByUserID(ctx context.Context, userID uuid.UUID) (int, error) {

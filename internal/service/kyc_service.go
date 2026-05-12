@@ -108,7 +108,7 @@ func (s *KYCService) ApproveKYC(ctx context.Context, userID, adminID uuid.UUID) 
 		}
 		if err := s.userRepo.UpdateRole(ctx, userID, domain.UserRoleSeller); err != nil {
 			return err
-		}
+		} 
 
 		payload, _ := json.Marshal(&domain.UserRoleUpgradedEvent{
 			UserID:  userID,
